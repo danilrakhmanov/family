@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/Avatar'
-import { Plus, Trash2, Check, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Check, Loader2, Pencil, X, Save } from 'lucide-react'
 import type { ShoppingItem } from '@/lib/database.types'
 
 type ItemWithProfile = ShoppingItem & {
@@ -23,6 +23,9 @@ export default function ShoppingClient({ initialItems }: ShoppingClientProps) {
   const [newPrice, setNewPrice] = useState('')
   const [loading, setLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editPrice, setEditPrice] = useState('')
   
   const supabase = createClient()
 
@@ -97,6 +100,51 @@ export default function ShoppingClient({ initialItems }: ShoppingClientProps) {
     }
   }
 
+  const startEdit = (id: string, name: string, price: number | null) => {
+    setEditingId(id)
+    setEditName(name)
+    setEditPrice(price ? price.toString() : '')
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditName('')
+    setEditPrice('')
+  }
+
+  const saveEdit = async (id: string) => {
+    if (!editName.trim()) return
+    
+    setActionLoading(id)
+    
+    try {
+      const { error } = await supabase
+        .from('shopping_items')
+        .update({ 
+          name: editName.trim(),
+          estimated_price: editPrice ? parseFloat(editPrice) : null
+        })
+        .eq('id', id)
+
+      if (error) throw error
+
+      setItems(items.map(item => 
+        item.id === id ? { 
+          ...item, 
+          name: editName.trim(),
+          estimated_price: editPrice ? parseFloat(editPrice) : null
+        } : item
+      ))
+      setEditingId(null)
+      setEditName('')
+      setEditPrice('')
+    } catch (error) {
+      console.error('Error editing item:', error)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   const pendingItems = items.filter(i => !i.purchased)
   const purchasedItems = items.filter(i => i.purchased)
 
@@ -125,7 +173,7 @@ export default function ShoppingClient({ initialItems }: ShoppingClientProps) {
               type="number"
               value={newPrice}
               onChange={(e) => setNewPrice(e.target.value)}
-                            placeholder="Цена (опционально)"
+              placeholder="Цена"
               className="input pl-10 w-full sm:w-40"
               step="0.01"
               min="0"
@@ -178,11 +226,56 @@ export default function ShoppingClient({ initialItems }: ShoppingClientProps) {
                   )}
                 </button>
                 <div className="flex-1">
-                  <span className="text-gray-700">{item.name}</span>
-                  {item.estimated_price && (
-                    <span className="text-sm text-gray-400 ml-2">
-                      ₽{item.estimated_price.toLocaleString()}
-                    </span>
+                  {editingId === item.id ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="input text-sm py-1 px-2 flex-1"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEdit(item.id)
+                          if (e.key === 'Escape') cancelEdit()
+                        }}
+                      />
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₽</span>
+                        <input
+                          type="number"
+                          value={editPrice}
+                          onChange={(e) => setEditPrice(e.target.value)}
+                          className="input text-sm py-1 pl-6 pr-2 w-24"
+                          step="0.01"
+                          min="0"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveEdit(item.id)
+                            if (e.key === 'Escape') cancelEdit()
+                          }}
+                        />
+                      </div>
+                      <button
+                        onClick={() => saveEdit(item.id)}
+                        className="p-1 text-success hover:text-green-700"
+                      >
+                        <Save className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="p-1 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-gray-700">{item.name}</span>
+                      {item.estimated_price && (
+                        <span className="text-sm text-gray-400 ml-2">
+                          ₽{item.estimated_price.toLocaleString()}
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
                 <Avatar 
@@ -190,6 +283,14 @@ export default function ShoppingClient({ initialItems }: ShoppingClientProps) {
                   name={item.profiles?.full_name ?? null} 
                   size="sm" 
                 />
+                {editingId === item.id ? null : (
+                  <button
+                    onClick={() => startEdit(item.id, item.name, item.estimated_price)}
+                    className="p-2 text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   onClick={() => deleteItem(item.id)}
                   className="p-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-all"
@@ -226,11 +327,56 @@ export default function ShoppingClient({ initialItems }: ShoppingClientProps) {
                   )}
                 </button>
                 <div className="flex-1">
-                  <span className="text-gray-500 line-through">{item.name}</span>
-                  {item.estimated_price && (
-                    <span className="text-sm text-gray-400 ml-2">
-                      ₽{item.estimated_price.toLocaleString()}
-                    </span>
+                  {editingId === item.id ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="input text-sm py-1 px-2 flex-1"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEdit(item.id)
+                          if (e.key === 'Escape') cancelEdit()
+                        }}
+                      />
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₽</span>
+                        <input
+                          type="number"
+                          value={editPrice}
+                          onChange={(e) => setEditPrice(e.target.value)}
+                          className="input text-sm py-1 pl-6 pr-2 w-24"
+                          step="0.01"
+                          min="0"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveEdit(item.id)
+                            if (e.key === 'Escape') cancelEdit()
+                          }}
+                        />
+                      </div>
+                      <button
+                        onClick={() => saveEdit(item.id)}
+                        className="p-1 text-success hover:text-green-700"
+                      >
+                        <Save className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="p-1 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-gray-500 line-through">{item.name}</span>
+                      {item.estimated_price && (
+                        <span className="text-sm text-gray-400 ml-2">
+                          ₽{item.estimated_price.toLocaleString()}
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
                 <Avatar 
@@ -238,6 +384,14 @@ export default function ShoppingClient({ initialItems }: ShoppingClientProps) {
                   name={item.profiles?.full_name ?? null} 
                   size="sm" 
                 />
+                {editingId === item.id ? null : (
+                  <button
+                    onClick={() => startEdit(item.id, item.name, item.estimated_price)}
+                    className="p-2 text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   onClick={() => deleteItem(item.id)}
                   className="p-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-all"

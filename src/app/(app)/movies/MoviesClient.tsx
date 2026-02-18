@@ -34,7 +34,6 @@ export default function MoviesClient({ initialMovies }: MoviesClientProps) {
   const [showResults, setShowResults] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [showWatched, setShowWatched] = useState(false)
-  const [apiError, setApiError] = useState<string | null>(null)
   
   const searchRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
@@ -311,9 +310,15 @@ export default function MoviesClient({ initialMovies }: MoviesClientProps) {
                   size="sm" 
                 />
                 {movie.watched && (
-                                    <span className="text-xs text-success">Просмотрено</span>
+                  <span className="text-xs text-success">Просмотрено</span>
                 )}
               </div>
+              {/* Comment - display only */}
+              {movie.comment && (
+                <p className="text-xs text-gray-500 mt-1 truncate" title={movie.comment}>
+                  {movie.comment}
+                </p>
+              )}
             </div>
           ))}
         </div>

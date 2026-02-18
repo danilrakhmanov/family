@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/Avatar'
-import { Plus, Trash2, Loader2, Target, TrendingUp, PiggyBank } from 'lucide-react'
+import { Plus, Trash2, Loader2, Target, TrendingUp, PiggyBank, Pencil, Save, X } from 'lucide-react'
 import type { Goal, Expense } from '@/lib/database.types'
 
 type GoalWithProfile = Goal & {
@@ -47,6 +47,15 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
   
   // Action loading
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  
+  // Edit state
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
+  const [editGoalName, setEditGoalName] = useState('')
+  const [editGoalTarget, setEditGoalTarget] = useState('')
+  const [editGoalCurrent, setEditGoalCurrent] = useState('')
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null)
+  const [editExpenseDesc, setEditExpenseDesc] = useState('')
+  const [editExpenseAmount, setEditExpenseAmount] = useState('')
   
   const supabase = createClient()
 
@@ -132,6 +141,50 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
     }
   }
 
+  const startEditGoal = (goal: GoalWithProfile) => {
+    setEditingGoalId(goal.id)
+    setEditGoalName(goal.name)
+    setEditGoalTarget(goal.target_amount.toString())
+    setEditGoalCurrent(goal.current_amount.toString())
+  }
+
+  const cancelEditGoal = () => {
+    setEditingGoalId(null)
+    setEditGoalName('')
+    setEditGoalTarget('')
+    setEditGoalCurrent('')
+  }
+
+  const saveEditGoal = async (id: string) => {
+    if (!editGoalName.trim() || !editGoalTarget || !editGoalCurrent) return
+    
+    setActionLoading(id)
+    
+    try {
+      const { error } = await supabase
+        .from('goals')
+        .update({ 
+          name: editGoalName.trim(),
+          target_amount: parseFloat(editGoalTarget),
+          current_amount: parseFloat(editGoalCurrent)
+        })
+        .eq('id', id)
+
+      if (error) throw error
+
+      setGoals(goals.map(g => 
+        g.id === id 
+          ? { ...g, name: editGoalName.trim(), target_amount: parseFloat(editGoalTarget), current_amount: parseFloat(editGoalCurrent) }
+          : g
+      ))
+      setEditingGoalId(null)
+    } catch (error) {
+      console.error('Error updating goal:', error)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   // Expenses functions
   const addExpense = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -178,6 +231,47 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
       setExpenses(expenses.filter(e => e.id !== id))
     } catch (error) {
       console.error('Error deleting expense:', error)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const startEditExpense = (expense: ExpenseWithProfile) => {
+    setEditingExpenseId(expense.id)
+    setEditExpenseDesc(expense.description)
+    setEditExpenseAmount(expense.amount.toString())
+  }
+
+  const cancelEditExpense = () => {
+    setEditingExpenseId(null)
+    setEditExpenseDesc('')
+    setEditExpenseAmount('')
+  }
+
+  const saveEditExpense = async (id: string) => {
+    if (!editExpenseDesc.trim() || !editExpenseAmount) return
+    
+    setActionLoading(id)
+    
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .update({ 
+          description: editExpenseDesc.trim(),
+          amount: parseFloat(editExpenseAmount)
+        })
+        .eq('id', id)
+
+      if (error) throw error
+
+      setExpenses(expenses.map(e => 
+        e.id === id 
+          ? { ...e, description: editExpenseDesc.trim(), amount: parseFloat(editExpenseAmount) }
+          : e
+      ))
+      setEditingExpenseId(null)
+    } catch (error) {
+      console.error('Error updating expense:', error)
     } finally {
       setActionLoading(null)
     }
@@ -283,36 +377,95 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
               
               return (
                 <div key={goal.id} className="card group">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h3 className="font-medium text-gray-800">{goal.name}</h3>
-                      <p className="text-sm text-gray-500">
-                        ₽{goal.current_amount.toLocaleString()} из ₽{goal.target_amount.toLocaleString()}
-                      </p>
+                  {editingGoalId === goal.id ? (
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={editGoalName}
+                        onChange={(e) => setEditGoalName(e.target.value)}
+                        className="input w-full"
+                        placeholder="Название цели"
+                      />
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <label className="text-xs text-gray-500">Целевая сумма</label>
+                          <input
+                            type="number"
+                            value={editGoalTarget}
+                            onChange={(e) => setEditGoalTarget(e.target.value)}
+                            className="input w-full"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-xs text-gray-500">Текущая сумма</label>
+                          <input
+                            type="number"
+                            value={editGoalCurrent}
+                            onChange={(e) => setEditGoalCurrent(e.target.value)}
+                            className="input w-full"
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => saveEditGoal(goal.id)}
+                          disabled={actionLoading === goal.id || !editGoalName.trim()}
+                          className="btn-primary flex-1 flex items-center justify-center gap-2"
+                        >
+                          <Save className="w-4 h-4" /> Сохранить
+                        </button>
+                        <button
+                          onClick={cancelEditGoal}
+                          className="btn-secondary flex-1"
+                        >
+                          Отмена
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => deleteGoal(goal.id)}
-                      disabled={actionLoading === goal.id}
-                      className="p-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-all"
-                    >
-                      {actionLoading === goal.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h3 className="font-medium text-gray-800">{goal.name}</h3>
+                          <p className="text-sm text-gray-500">
+                            ₽{goal.current_amount.toLocaleString()} из ₽{goal.target_amount.toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => startEditGoal(goal)}
+                            className="p-2 text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteGoal(goal.id)}
+                            disabled={actionLoading === goal.id}
+                            className="p-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-all"
+                          >
+                            {actionLoading === goal.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Progress bar */}
+                      <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-3">
+                        <div 
+                          className="h-full bg-gradient-to-r from-success to-success/70 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(progress, 100)}%` }}
+                        />
+                      </div>
+                    </>
+                  )}
                   
-                  {/* Progress bar */}
-                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-3">
-                    <div 
-                      className="h-full bg-gradient-to-r from-success to-success/70 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(progress, 100)}%` }}
-                    />
-                  </div>
-                  
-                  {/* Add contribution */}
-                  {contributingGoal === goal.id ? (
+                  {/* Add contribution - only show when not editing */}
+                  {!editingGoalId && (contributingGoal === goal.id ? (
                     <div className="flex gap-2">
                       <div className="relative flex-1">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">₽</span>
@@ -350,7 +503,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
                     >
                       + Добавить
                     </button>
-                  )}
+                  ))}
                 </div>
               )
             }) : (
@@ -404,31 +557,76 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
           <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-hide">
             {expenses.length > 0 ? expenses.map(expense => (
               <div key={expense.id} className="card flex items-center gap-4 group">
-                <div className="flex-1">
-                  <p className="text-gray-700">{expense.description}</p>
-                  <p className="text-sm text-gray-400">
-                    {new Date(expense.date).toLocaleDateString()}
-                  </p>
-                </div>
-                <span className="font-semibold text-gray-800">
-                  ₽{expense.amount.toLocaleString()}
-                </span>
-                <Avatar 
-                  url={expense.profiles?.avatar_url ?? null} 
-                  name={expense.profiles?.full_name ?? null} 
-                  size="sm" 
-                />
-                <button
-                  onClick={() => deleteExpense(expense.id)}
-                  disabled={actionLoading === expense.id}
-                  className="p-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-all"
-                >
-                  {actionLoading === expense.id ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-4 h-4" />
-                  )}
-                </button>
+                {editingExpenseId === expense.id ? (
+                  <>
+                    <div className="flex-1 space-y-2">
+                      <input
+                        type="text"
+                        value={editExpenseDesc}
+                        onChange={(e) => setEditExpenseDesc(e.target.value)}
+                        className="input w-full"
+                        placeholder="Описание"
+                      />
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          value={editExpenseAmount}
+                          onChange={(e) => setEditExpenseAmount(e.target.value)}
+                          className="input flex-1"
+                          placeholder="Сумма"
+                          step="0.01"
+                        />
+                        <button
+                          onClick={() => saveEditExpense(expense.id)}
+                          disabled={actionLoading === expense.id || !editExpenseDesc.trim()}
+                          className="btn-primary px-3"
+                        >
+                          <Save className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={cancelEditExpense}
+                          className="btn-secondary px-3"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex-1">
+                      <p className="text-gray-700">{expense.description}</p>
+                      <p className="text-sm text-gray-400">
+                        {new Date(expense.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <span className="font-semibold text-gray-800">
+                      ₽{expense.amount.toLocaleString()}
+                    </span>
+                    <Avatar 
+                      url={expense.profiles?.avatar_url ?? null} 
+                      name={expense.profiles?.full_name ?? null} 
+                      size="sm" 
+                    />
+                    <button
+                      onClick={() => startEditExpense(expense)}
+                      className="p-2 text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteExpense(expense.id)}
+                      disabled={actionLoading === expense.id}
+                      className="p-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      {actionLoading === expense.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  </>
+                )}
               </div>
             )) : (
               <div className="text-center py-8 text-gray-500">

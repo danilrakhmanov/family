@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/Avatar'
-import { Plus, Trash2, Loader2, Gift, Star, Lock, Check } from 'lucide-react'
+import { Plus, Trash2, Loader2, Gift, Star, Lock, Check, Pencil, Save, X } from 'lucide-react'
 import type { Wish } from '@/lib/database.types'
 
 type WishWithProfile = Wish & {
@@ -29,6 +29,11 @@ export default function WishlistClient({ initialWishes }: WishlistClientProps) {
   const [newEmoji, setNewEmoji] = useState('🎁')
   const [addingWish, setAddingWish] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editPrice, setEditPrice] = useState('')
+  const [editPriority, setEditPriority] = useState(3)
+  const [editComment, setEditComment] = useState('')
   
   const supabase = createClient()
 
@@ -126,6 +131,61 @@ export default function WishlistClient({ initialWishes }: WishlistClientProps) {
       setWishes(wishes.filter(w => w.id !== id))
     } catch (error) {
       console.error('Error deleting wish:', error)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const startEdit = (wish: WishWithProfile) => {
+    setEditingId(wish.id)
+    setEditTitle(wish.title)
+    setEditPrice(wish.price ? wish.price.toString() : '')
+    setEditPriority(wish.priority)
+    setEditComment(wish.comment || '')
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditTitle('')
+    setEditPrice('')
+    setEditPriority(3)
+    setEditComment('')
+  }
+
+  const saveEdit = async (id: string) => {
+    if (!editTitle.trim()) return
+    
+    setActionLoading(id)
+    
+    try {
+      const { error } = await supabase
+        .from('wishes')
+        .update({ 
+          title: editTitle.trim(),
+          price: editPrice ? parseFloat(editPrice) : null,
+          priority: editPriority,
+          comment: editComment.trim() || null
+        })
+        .eq('id', id)
+
+      if (error) throw error
+
+      setWishes(wishes.map(w => 
+        w.id === id ? { 
+          ...w, 
+          title: editTitle.trim(),
+          price: editPrice ? parseFloat(editPrice) : null,
+          priority: editPriority,
+          comment: editComment.trim() || null
+        } : w
+      ))
+      setEditingId(null)
+      setEditTitle('')
+      setEditPrice('')
+      setEditPriority(3)
+      setEditComment('')
+    } catch (error) {
+      console.error('Error editing wish:', error)
     } finally {
       setActionLoading(null)
     }
@@ -288,26 +348,90 @@ export default function WishlistClient({ initialWishes }: WishlistClientProps) {
                 <div className="text-4xl mb-3">{wish.image_url || '🎁'}</div>
                 
                 {/* Content */}
-                <h3 className="font-medium text-gray-800 mb-1">{wish.title}</h3>
-                
-                {wish.price && (
-                  <p className="text-sm text-gray-500 mb-2">
-                    ~{wish.price?.toLocaleString()} ₽
-                  </p>
+                {editingId === wish.id ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="input text-sm w-full"
+                      placeholder="Название"
+                    />
+                    <div className="flex gap-2">
+                      <span className="text-gray-400 text-sm self-center">₽</span>
+                      <input
+                        type="number"
+                        value={editPrice}
+                        onChange={(e) => setEditPrice(e.target.value)}
+                        className="input text-sm flex-1"
+                        placeholder="Цена"
+                      />
+                    </div>
+                    <div className="flex gap-1">
+                      {[1,2,3,4,5].map(n => (
+                        <button
+                          key={n}
+                          onClick={() => setEditPriority(n)}
+                          className={`p-1 ${editPriority >= n ? 'text-yellow-400' : 'text-gray-300'}`}
+                        >
+                          <Star className="w-4 h-4 fill-current" />
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      value={editComment}
+                      onChange={(e) => setEditComment(e.target.value)}
+                      className="input text-sm w-full"
+                      placeholder="Комментарий"
+                    />
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => saveEdit(wish.id)}
+                        disabled={actionLoading === wish.id}
+                        className="btn-primary flex-1 text-sm py-1"
+                      >
+                        Сохранить
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="btn-secondary flex-1 text-sm py-1"
+                      >
+                        Отмена
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <h3 className="font-medium text-gray-800 mb-1">{wish.title}</h3>
+                    
+                    {wish.price && (
+                      <p className="text-sm text-gray-500 mb-2">
+                        ~{wish.price?.toLocaleString()} ₽
+                      </p>
+                    )}
+                    
+                    {wish.comment && (
+                      <p className="text-sm text-gray-400 mb-2">{wish.comment}</p>
+                    )}
+                    
+                    {/* Priority */}
+                    <div className="mb-3">{renderStars(wish.priority)}</div>
+                  </div>
                 )}
-                
-                {wish.comment && (
-                  <p className="text-sm text-gray-400 mb-2">{wish.comment}</p>
-                )}
-                
-                {/* Priority */}
-                <div className="mb-3">{renderStars(wish.priority)}</div>
                 
                 {/* Status */}
                 {wish.reserved && (
                   <div className="flex items-center gap-1 text-sm text-info mb-3">
                     <Lock className="w-4 h-4" />
                     Reserved
+                  </div>
+                )}
+                
+                {wish.purchased && (
+                  <div className="flex items-center gap-1 text-sm text-success mb-3">
+                    <Check className="w-4 h-4" />
+                    Подарено
                   </div>
                 )}
                 
@@ -344,11 +468,28 @@ export default function WishlistClient({ initialWishes }: WishlistClientProps) {
                     <button
                       onClick={() => deleteWish(wish.id)}
                       disabled={actionLoading === wish.id}
-                      className="p-2 rounded-lg bg-gray-100 hover:bg-danger/10 text-gray-400 hover:text-danger transition-colors"
+                      className={`p-2 rounded-lg bg-gray-100 hover:bg-danger/10 text-gray-400 hover:text-danger transition-colors ${wish.purchased ? '' : 'opacity-0 group-hover:opacity-100'}`}
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
+                    {editingId === wish.id ? (
+                      <button
+                        onClick={cancelEdit}
+                        className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-400"
+                        title="Cancel"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => startEdit(wish)}
+                        className="p-2 rounded-lg bg-gray-100 hover:bg-primary/10 text-gray-400 hover:text-primary transition-colors"
+                        title="Edit"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/Avatar'
-import { Plus, Trash2, Loader2, Calendar as CalendarIcon, Clock } from 'lucide-react'
+import { Plus, Trash2, Loader2, Calendar as CalendarIcon, Clock, Pencil, Save, X } from 'lucide-react'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import type { Event } from '@/lib/database.types'
@@ -33,6 +33,10 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [showAddForm, setShowAddForm] = useState(false)
   const [newEventTitle, setNewEventTitle] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editTime, setEditTime] = useState('')
+  const [editColor, setEditColor] = useState('#b8a9a1')
   const [newEventTime, setNewEventTime] = useState('')
   const [newEventColor, setNewEventColor] = useState('#b8a9a1')
   const [addingEvent, setAddingEvent] = useState(false)
@@ -95,6 +99,50 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
       setEvents(events.filter(e => e.id !== id))
     } catch (error) {
       console.error('Error deleting event:', error)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const startEdit = (event: EventWithProfile) => {
+    setEditingId(event.id)
+    setEditTitle(event.title)
+    setEditTime(event.event_time || '')
+    setEditColor(event.color)
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditTitle('')
+    setEditTime('')
+    setEditColor('#b8a9a1')
+  }
+
+  const saveEdit = async (id: string) => {
+    if (!editTitle.trim()) return
+    
+    setActionLoading(id)
+    
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({ 
+          title: editTitle.trim(),
+          event_time: editTime || null,
+          color: editColor
+        })
+        .eq('id', id)
+
+      if (error) throw error
+
+      setEvents(events.map(e => 
+        e.id === id 
+          ? { ...e, title: editTitle.trim(), event_time: editTime || null, color: editColor }
+          : e
+      ))
+      setEditingId(null)
+    } catch (error) {
+      console.error('Error updating event:', error)
     } finally {
       setActionLoading(null)
     }
@@ -222,31 +270,85 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                   className="card flex items-center gap-4 group"
                   style={{ borderLeftWidth: 4, borderLeftColor: event.color }}
                 >
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-800">{event.title}</p>
-                    {event.event_time && (
-                      <p className="text-sm text-gray-500 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {event.event_time}
-                      </p>
-                    )}
-                  </div>
-                  <Avatar 
-                    url={event.profiles?.avatar_url ?? null} 
-                    name={event.profiles?.full_name ?? null} 
-                    size="sm" 
-                  />
-                  <button
-                    onClick={() => deleteEvent(event.id)}
-                    disabled={actionLoading === event.id}
-                    className="p-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-all"
-                  >
-                    {actionLoading === event.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                  </button>
+                  {editingId === event.id ? (
+                    <>
+                      <div className="flex-1 space-y-2">
+                        <input
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="input w-full"
+                          placeholder="Название"
+                        />
+                        <div className="flex gap-2">
+                          <input
+                            type="time"
+                            value={editTime}
+                            onChange={(e) => setEditTime(e.target.value)}
+                            className="input flex-1"
+                          />
+                          <select
+                            value={editColor}
+                            onChange={(e) => setEditColor(e.target.value)}
+                            className="input flex-1"
+                          >
+                            {colorOptions.map(c => (
+                              <option key={c.value} value={c.value}>{c.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => saveEdit(event.id)}
+                          disabled={actionLoading === event.id || !editTitle.trim()}
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                        >
+                          <Save className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-all"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-800">{event.title}</p>
+                        {event.event_time && (
+                          <p className="text-sm text-gray-500 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {event.event_time}
+                          </p>
+                        )}
+                      </div>
+                      <Avatar 
+                        url={event.profiles?.avatar_url ?? null} 
+                        name={event.profiles?.full_name ?? null} 
+                        size="sm" 
+                      />
+                      <button
+                        onClick={() => startEdit(event)}
+                        className="p-2 text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => deleteEvent(event.id)}
+                        disabled={actionLoading === event.id}
+                        className="p-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        {actionLoading === event.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </>
+                  )}
                 </div>
               ))
             ) : (

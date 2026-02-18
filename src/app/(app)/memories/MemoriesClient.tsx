@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/Avatar'
-import { Plus, Trash2, Loader2, BookHeart, Shuffle, X, Calendar, Image as ImageIcon } from 'lucide-react'
+import { Plus, Trash2, Loader2, BookHeart, Shuffle, X, Calendar, Image as ImageIcon, Pencil, Save } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
 import type { Memory } from '@/lib/database.types'
 
@@ -27,6 +27,8 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
   const [addingMemory, setAddingMemory] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [randomMemory, setRandomMemory] = useState<MemoryWithProfile | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState('')
   
   const supabase = createClient()
 
@@ -79,6 +81,41 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
       if (randomMemory?.id === id) setRandomMemory(null)
     } catch (error) {
       console.error('Error deleting memory:', error)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const startEdit = (id: string, content: string) => {
+    setEditingId(id)
+    setEditContent(content)
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditContent('')
+  }
+
+  const saveEdit = async (id: string) => {
+    if (!editContent.trim()) return
+    
+    setActionLoading(id)
+    
+    try {
+      const { error } = await supabase
+        .from('memories')
+        .update({ content: editContent.trim() })
+        .eq('id', id)
+
+      if (error) throw error
+
+      setMemories(memories.map(m => 
+        m.id === id ? { ...m, content: editContent.trim() } : m
+      ))
+      setEditingId(null)
+      setEditContent('')
+    } catch (error) {
+      console.error('Error editing memory:', error)
     } finally {
       setActionLoading(null)
     }
@@ -250,7 +287,34 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
                   </div>
                   
                   {/* Content */}
-                  <p className="text-gray-700 whitespace-pre-wrap">{memory.content}</p>
+                  {editingId === memory.id ? (
+                    <div className="mt-2">
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="input w-full text-sm"
+                        rows={3}
+                        autoFocus
+                      />
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={() => saveEdit(memory.id)}
+                          disabled={actionLoading === memory.id}
+                          className="btn-primary text-sm py-1"
+                        >
+                          Сохранить
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          className="btn-secondary text-sm py-1"
+                        >
+                          Отмена
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-700 whitespace-pre-wrap">{memory.content}</p>
+                  )}
                   
                   {/* Image */}
                   {memory.image_url && (
@@ -268,6 +332,14 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
                 </div>
                 
                 {/* Delete button */}
+                {editingId === memory.id ? null : (
+                  <button
+                    onClick={() => startEdit(memory.id, memory.content)}
+                    className="p-2 text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   onClick={() => deleteMemory(memory.id)}
                   disabled={actionLoading === memory.id}

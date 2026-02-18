@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/Avatar'
-import { Plus, Trash2, Check, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Check, Loader2, Pencil, X, Save } from 'lucide-react'
 import type { Todo } from '@/lib/database.types'
 
 type TodoWithProfile = Todo & {
@@ -23,6 +23,8 @@ export default function TasksClient({ initialTodos }: TasksClientProps) {
   const [loading, setLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
   
   const supabase = createClient()
 
@@ -100,6 +102,41 @@ export default function TasksClient({ initialTodos }: TasksClientProps) {
     }
   }
 
+  const startEdit = (id: string, text: string) => {
+    setEditingId(id)
+    setEditText(text)
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditText('')
+  }
+
+  const saveEdit = async (id: string) => {
+    if (!editText.trim()) return
+    
+    setActionLoading(id)
+    
+    try {
+      const { error } = await supabase
+        .from('todos')
+        .update({ text: editText.trim() })
+        .eq('id', id)
+
+      if (error) throw error
+
+      setTodos(todos.map(todo => 
+        todo.id === id ? { ...todo, text: editText.trim() } : todo
+      ))
+      setEditingId(null)
+      setEditText('')
+    } catch (error) {
+      console.error('Error editing task:', error)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   const pendingTodos = todos.filter(t => !t.completed)
   const completedTodos = todos.filter(t => t.completed)
 
@@ -152,12 +189,50 @@ export default function TasksClient({ initialTodos }: TasksClientProps) {
                     <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
                   ) : null}
                 </button>
-                <span className="flex-1 text-gray-700">{todo.text}</span>
+                <span className="flex-1 text-gray-700">
+                  {editingId === todo.id ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        className="input text-sm py-1 px-2 w-full"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEdit(todo.id)
+                          if (e.key === 'Escape') cancelEdit()
+                        }}
+                      />
+                      <button
+                        onClick={() => saveEdit(todo.id)}
+                        className="p-1 text-success hover:text-green-700"
+                      >
+                        <Save className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="p-1 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    todo.text
+                  )}
+                </span>
                 <Avatar 
                   url={todo.profiles?.avatar_url ?? null} 
                   name={todo.profiles?.full_name ?? null} 
                   size="sm" 
                 />
+                {editingId === todo.id ? null : (
+                  <button
+                    onClick={() => startEdit(todo.id, todo.text)}
+                    className="p-2 text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   onClick={() => deleteTask(todo.id)}
                   className="p-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-all"
@@ -193,12 +268,50 @@ export default function TasksClient({ initialTodos }: TasksClientProps) {
                     <Check className="w-4 h-4" />
                   )}
                 </button>
-                <span className="flex-1 text-gray-500 line-through">{todo.text}</span>
+                <span className="flex-1 text-gray-500 line-through">
+                  {editingId === todo.id ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        className="input text-sm py-1 px-2 w-full"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEdit(todo.id)
+                          if (e.key === 'Escape') cancelEdit()
+                        }}
+                      />
+                      <button
+                        onClick={() => saveEdit(todo.id)}
+                        className="p-1 text-success hover:text-green-700"
+                      >
+                        <Save className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="p-1 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    todo.text
+                  )}
+                </span>
                 <Avatar 
                   url={todo.profiles?.avatar_url ?? null} 
                   name={todo.profiles?.full_name ?? null} 
                   size="sm" 
                 />
+                {editingId === todo.id ? null : (
+                  <button
+                    onClick={() => startEdit(todo.id, todo.text)}
+                    className="p-2 text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   onClick={() => deleteTask(todo.id)}
                   className="p-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-all"
