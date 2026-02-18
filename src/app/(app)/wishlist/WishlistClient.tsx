@@ -468,7 +468,7 @@ export default function WishlistClient({ initialWishes }: WishlistClientProps) {
                     <button
                       onClick={() => deleteWish(wish.id)}
                       disabled={actionLoading === wish.id}
-                      className={`p-2 rounded-lg bg-gray-100 hover:bg-danger/10 text-gray-400 hover:text-danger transition-colors ${wish.purchased ? '' : 'opacity-0 group-hover:opacity-100'}`}
+                      className="p-2 rounded-lg bg-gray-100 hover:bg-danger/10 text-gray-400 hover:text-danger transition-colors"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -508,7 +508,7 @@ export default function WishlistClient({ initialWishes }: WishlistClientProps) {
             {purchasedWishes.map(wish => (
               <div
                 key={wish.id}
-                className="card opacity-60"
+                className="card opacity-60 relative group"
               >
                 <div className="text-4xl mb-3">{wish.image_url || '🎁'}</div>
                 <h3 className="font-medium text-gray-500 line-through">{wish.title}</h3>
@@ -519,6 +519,18 @@ export default function WishlistClient({ initialWishes }: WishlistClientProps) {
                   <Check className="w-4 h-4" />
                   Подарено
                 </div>
+                <button
+                  onClick={() => deleteWish(wish.id)}
+                  disabled={actionLoading === wish.id}
+                  className="absolute top-3 right-3 p-2 rounded-lg bg-gray-100 hover:bg-danger/10 text-gray-400 hover:text-danger transition-colors"
+                  title="Удалить"
+                >
+                  {actionLoading === wish.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </button>
               </div>
             ))}
           </div>

@@ -13,7 +13,8 @@ import {
   Menu,
   X,
   LogOut,
-  User
+  User,
+  ChefHat
 } from 'lucide-react'
 import { useState } from 'react'
 import Avatar from './Avatar'
@@ -33,6 +34,7 @@ const navItems = [
   { href: '/calendar', label: 'Календарь', icon: Calendar, emoji: 'calendar' },
   { href: '/wishlist', label: 'Вишлист', icon: Gift, emoji: 'gift' },
   { href: '/memories', label: 'Воспоминания', icon: BookHeart, emoji: 'book' },
+  { href: 'https://danilrakhmanov.github.io/recepti/', label: 'Рецепты', icon: ChefHat, emoji: 'chef', external: true },
 ]
 
 export default function Sidebar({ profile, onLogout }: SidebarProps) {
@@ -84,26 +86,46 @@ export default function Sidebar({ profile, onLogout }: SidebarProps) {
           {/* Navigation */}
           <nav className="flex-1 space-y-2">
             {navItems.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+              const isActive = !item.external && (pathname === item.href || pathname.startsWith(item.href + '/'))
               const Icon = item.icon
+              const isExternal = item.external
               
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setIsOpen(false)}
-                  className={`
-                    flex items-center gap-3 px-4 py-3 rounded-xl
-                    transition-all duration-200
-                    ${isActive 
-                      ? 'bg-primary text-white shadow-soft' 
-                      : 'text-gray-600 hover:bg-card hover:text-gray-800'
-                    }
-                  `}
-                >
+              const linkContent = (
+                <>
                   {Icon && <Icon size={20} />}
                   <span className="font-medium">{item.label}</span>
-                </Link>
+                  {isExternal && <span className="text-xs opacity-50">↗</span>}
+                </>
+              )
+              
+              return (
+                isExternal ? (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-card hover:text-gray-800 transition-all duration-200"
+                  >
+                    {linkContent}
+                  </a>
+                ) : (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className={`
+                      flex items-center gap-3 px-4 py-3 rounded-xl
+                      transition-all duration-200
+                      ${isActive 
+                        ? 'bg-primary text-white shadow-soft' 
+                        : 'text-gray-600 hover:bg-card hover:text-gray-800'
+                      }
+                    `}
+                  >
+                    {linkContent}
+                  </Link>
+                )
               )
             })}
           </nav>

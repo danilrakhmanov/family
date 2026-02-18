@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { CheckSquare, ShoppingCart, Film, Wallet, Calendar, Gift, BookHeart, TrendingUp } from 'lucide-react'
+import { CheckSquare, ShoppingCart, Film, Wallet, Calendar, Gift, BookHeart, TrendingUp, ChefHat } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
@@ -86,6 +86,14 @@ export default async function DashboardPage() {
       color: 'bg-accent',
       subtitle: 'сохранено'
     },
+    { 
+      href: 'https://danilrakhmanov.github.io/recepti/', 
+      label: 'Рецепты', 
+      icon: ChefHat, 
+      color: 'bg-orange-500',
+      subtitle: 'открыть',
+      external: true
+    },
   ]
 
   return (
@@ -100,25 +108,53 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {cards.map((card) => {
           const Icon = card.icon
+          const isExternal = card.external
+          
+          const cardContent = (
+            <>
+              <div className="flex items-start justify-between">
+                <div className={`p-3 rounded-xl ${card.color} text-white`}>
+                  <Icon className="w-6 h-6" />
+                </div>
+                {isExternal ? (
+                  <span className="text-gray-400">↗</span>
+                ) : (
+                  <TrendingUp className="w-5 h-5 text-gray-300 group-hover:text-success transition-colors" />
+                )}
+              </div>
+              <div className="mt-4">
+                {card.count !== undefined && (
+                  <p className="text-3xl font-bold text-gray-800">
+                    {card.isMoney ? `${card.count.toLocaleString()}` : card.count}
+                  </p>
+                )}
+                <p className="text-sm text-gray-500">{card.label}</p>
+                <p className="text-xs text-gray-400 mt-1">{card.subtitle}</p>
+              </div>
+            </>
+          )
+          
+          if (isExternal) {
+            return (
+              <a
+                key={card.href}
+                href={card.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="card-hover group"
+              >
+                {cardContent}
+              </a>
+            )
+          }
+          
           return (
             <Link
               key={card.href}
               href={card.href}
               className="card-hover group"
             >
-              <div className="flex items-start justify-between">
-                <div className={`p-3 rounded-xl ${card.color} text-white`}>
-                  <Icon className="w-6 h-6" />
-                </div>
-                <TrendingUp className="w-5 h-5 text-gray-300 group-hover:text-success transition-colors" />
-              </div>
-              <div className="mt-4">
-                <p className="text-3xl font-bold text-gray-800">
-                  {card.isMoney ? `${card.count.toLocaleString()}` : card.count}
-                </p>
-                <p className="text-sm text-gray-500">{card.label}</p>
-                <p className="text-xs text-gray-400 mt-1">{card.subtitle}</p>
-              </div>
+              {cardContent}
             </Link>
           )
         })}

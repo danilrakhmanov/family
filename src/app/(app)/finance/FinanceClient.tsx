@@ -38,6 +38,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
   // Expense form state
   const [newExpenseDesc, setNewExpenseDesc] = useState('')
   const [newExpenseAmount, setNewExpenseAmount] = useState('')
+  const [newExpenseCategory, setNewExpenseCategory] = useState('Другое')
   const [addingExpense, setAddingExpense] = useState(false)
   
   // Contribution state
@@ -186,6 +187,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
   }
 
   // Expenses functions
+  const expenseCategories = ['Еда', 'Транспорт', 'Жильё', 'Развлечения', 'Одежда', 'Здоровье', 'Другое']
   const addExpense = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newExpenseDesc.trim() || !newExpenseAmount) return
@@ -200,6 +202,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
         .insert({
           description: newExpenseDesc.trim(),
           amount: parseFloat(newExpenseAmount),
+          category: newExpenseCategory,
           user_id: user!.id
         })
         .select()
@@ -210,6 +213,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
       setExpenses([data, ...expenses])
       setNewExpenseDesc('')
       setNewExpenseAmount('')
+      setNewExpenseCategory('Другое')
     } catch (error) {
       console.error('Error adding expense:', error)
     } finally {
@@ -430,7 +434,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
                         <div>
                           <h3 className="font-medium text-gray-800">{goal.name}</h3>
                           <p className="text-sm text-gray-500">
-                            ₽{goal.current_amount.toLocaleString()} из ₽{goal.target_amount.toLocaleString()}
+                            {goal.current_amount.toLocaleString()} ₽ из {goal.target_amount.toLocaleString()} ₽
                           </p>
                         </div>
                         <div className="flex gap-1">
@@ -534,11 +538,20 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
                   value={newExpenseAmount}
                   onChange={(e) => setNewExpenseAmount(e.target.value)}
                   placeholder="Сумма"
-                  className="input pl-10 w-full sm:w-32"
+                  className="input pl-8 w-24"
                   step="0.01"
                   min="0"
                 />
               </div>
+              <select
+                value={newExpenseCategory}
+                onChange={(e) => setNewExpenseCategory(e.target.value)}
+                className="input w-28"
+              >
+                {expenseCategories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
               <button
                 type="submit"
                 disabled={addingExpense || !newExpenseDesc.trim() || !newExpenseAmount}
@@ -559,7 +572,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
               <div key={expense.id} className="card flex items-center gap-4 group">
                 {editingExpenseId === expense.id ? (
                   <>
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 min-w-0 space-y-2">
                       <input
                         type="text"
                         value={editExpenseDesc}
@@ -594,14 +607,15 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
                   </>
                 ) : (
                   <>
-                    <div className="flex-1">
-                      <p className="text-gray-700">{expense.description}</p>
-                      <p className="text-sm text-gray-400">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-gray-700 truncate">{expense.description}</p>
+                      <p className="text-xs text-gray-400">
+                        {expense.category && <span className="mr-2">{expense.category}</span>}
                         {new Date(expense.date).toLocaleDateString()}
                       </p>
                     </div>
-                    <span className="font-semibold text-gray-800">
-                      ₽{expense.amount.toLocaleString()}
+                    <span className="font-semibold text-gray-800 whitespace-nowrap text-sm">
+                      {expense.amount.toLocaleString()} ₽
                     </span>
                     <Avatar 
                       url={expense.profiles?.avatar_url ?? null} 

@@ -44,8 +44,15 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
   
   const supabase = createClient()
 
-  // Get events for selected date
-  const selectedDateStr = selectedDate.toISOString().split('T')[0]
+  // Get events for selected date - use local timezone
+  const getLocalDateStr = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+  
+  const selectedDateStr = getLocalDateStr(selectedDate)
   const selectedDateEvents = useMemo(() => {
     return events.filter(e => e.event_date === selectedDateStr)
   }, [events, selectedDateStr])
@@ -151,7 +158,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
   // Custom tile content to show event dots
   const tileContent = ({ date, view }: { date: Date; view: string }) => {
     if (view === 'month') {
-      const dateStr = date.toISOString().split('T')[0]
+      const dateStr = getLocalDateStr(date)
       const dayEvents = events.filter(e => e.event_date === dateStr)
       
       if (dayEvents.length > 0) {

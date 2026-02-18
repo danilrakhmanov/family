@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/Avatar'
 import { Plus, Trash2, Loader2, BookHeart, Shuffle, X, Calendar, Image as ImageIcon, Pencil, Save } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
+import { ru } from 'date-fns/locale'
 import type { Memory } from '@/lib/database.types'
 
 type MemoryWithProfile = Memory & {
@@ -282,7 +283,7 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
                     </span>
                     <span className="text-gray-400">·</span>
                     <span className="text-sm text-gray-500">
-                      {formatDistanceToNow(new Date(memory.happened_at), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(memory.happened_at), { addSuffix: true, locale: ru })}
                     </span>
                   </div>
                   

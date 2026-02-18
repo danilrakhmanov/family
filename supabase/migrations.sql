@@ -308,4 +308,8 @@ USING (bucket_id = 'avatars');
 
 CREATE POLICY "Anyone can delete an avatar"
 ON storage.objects FOR DELETE
-USING (bucket_id = 'avatars');
+USING (bucket_id = 'avatars');  
+-- Add category to expenses  
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS category TEXT;
+UPDATE expenses SET category = 'Другое' WHERE category IS NULL;
+ALTER TABLE expenses ALTER COLUMN category SET DEFAULT 'Другое'; 

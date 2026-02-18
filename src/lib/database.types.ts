@@ -145,6 +145,7 @@ export interface Database {
           description: string
           amount: number
           date: string
+          category: string
           user_id: string
           created_at: string
         }
@@ -153,6 +154,7 @@ export interface Database {
           description: string
           amount: number
           date?: string
+          category?: string
           user_id: string
           created_at?: string
         }
@@ -161,6 +163,7 @@ export interface Database {
           description?: string
           amount?: number
           date?: string
+          category?: string
           user_id?: string
           created_at?: string
         }
