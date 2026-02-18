@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-background text-gray-800;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-xl font-medium transition-all duration-200 
+           hover:shadow-soft active:scale-[0.98] disabled:opacity-50 
+           disabled:cursor-not-allowed;
+  }
+  
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary/90;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-card text-gray-700 hover:bg-accent-light;
+  }
+  
+  .btn-accent {
+    @apply btn bg-accent text-white hover:bg-accent-dark;
+  }
+  
+  .btn-danger {
+    @apply btn bg-danger text-white hover:bg-danger/90;
+  }
+  
+  .btn-success {
+    @apply btn bg-success text-white hover:bg-success/90;
+  }
+  
+  .input {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-card 
+           bg-white/50 focus:border-accent focus:outline-none 
+           focus:ring-2 focus:ring-accent/20 transition-all duration-200;
+  }
+  
+  .card {
+    @apply bg-card/50 backdrop-blur-sm rounded-2xl p-4 shadow-card 
+           border border-white/50 transition-all duration-200;
+  }
+  
+  .card-hover {
+    @apply card hover:shadow-soft hover:scale-[1.01] cursor-pointer;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* React Calendar Custom Styles */
+.react-calendar {
+  @apply w-full bg-white/80 rounded-2xl border-none shadow-card p-4;
+  font-family: inherit;
+}
+
+.react-calendar__navigation {
+  @apply mb-4;
+}
+
+.react-calendar__navigation button {
+  @apply text-gray-600 hover:text-primary transition-colors rounded-lg p-2;
+  min-width: 44px;
+}
+
+.react-calendar__month-view__weekdays {
+  @apply text-center text-sm font-medium text-gray-500 mb-2;
+}
+
+.react-calendar__month-view__weekdays abbr {
+  @apply no-underline;
+}
+
+.react-calendar__tile {
+  @apply rounded-xl p-2 text-center transition-all duration-200 hover:bg-card;
+  min-height: 60px;
+}
+
+.react-calendar__tile--active {
+  @apply bg-primary text-white hover:bg-primary;
+}
+
+.react-calendar__tile--now {
+  @apply bg-accent-light text-primary font-semibold;
+}
+
+.react-calendar__tile--hasActive {
+  @apply bg-primary/10;
+}
