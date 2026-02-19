@@ -639,14 +639,14 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
                 placeholder="На что потратили?"
                 className="input flex-1"
               />
-              <div className="relative">
+              <div className="relative sm:w-28">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">₽</span>
                 <input
                   type="number"
                   value={newExpenseAmount}
                   onChange={(e) => setNewExpenseAmount(e.target.value)}
                   placeholder="Сумма"
-                  className="input pl-8 w-24"
+                  className="input pl-8 w-full"
                   step="0.01"
                   min="0"
                 />
@@ -654,7 +654,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
               <select
                 value={newExpenseCategory}
                 onChange={(e) => setNewExpenseCategory(e.target.value)}
-                className="input w-28"
+                className="input w-full sm:w-32"
               >
                 {expenseCategories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
@@ -663,7 +663,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
               <button
                 type="submit"
                 disabled={addingExpense || !newExpenseDesc.trim() || !newExpenseAmount}
-                className="btn-primary flex items-center justify-center gap-2"
+                className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto whitespace-nowrap px-4"
               >
                 {addingExpense ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
