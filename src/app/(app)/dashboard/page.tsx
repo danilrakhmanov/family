@@ -87,7 +87,7 @@ export default async function DashboardPage() {
       subtitle: 'сохранено'
     },
     { 
-      href: 'https://danilrakhmanov.github.io/recepti/', 
+      href: 'https://recipes-love.vercel.app/', 
       label: 'Рецепты', 
       icon: ChefHat, 
       color: 'bg-orange-500',
