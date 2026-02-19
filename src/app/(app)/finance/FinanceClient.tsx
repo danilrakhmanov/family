@@ -25,6 +25,107 @@ interface FinanceClientProps {
   initialExpenses: ExpenseWithProfile[]
 }
 
+// Компонент круговой диаграммы расходов по категориям
+function ExpensePieChart({ expenses }: { expenses: ExpenseWithProfile[] }) {
+  // Группируем расходы по категориям
+  const expensesByCategory = expenses.reduce((acc, expense) => {
+    const existing = acc.find(e => e.category === expense.category)
+    if (existing) {
+      existing.amount += expense.amount
+    } else {
+      acc.push({ category: expense.category, amount: expense.amount })
+    }
+    return acc
+  }, [] as { category: string; amount: number }[])
+  
+  // Сортируем по сумме (наибольшее первым)
+  expensesByCategory.sort((a, b) => b.amount - a.amount)
+  
+  if (expensesByCategory.length === 0) return null
+
+  // Цвета для категорий
+  const colors: { [key: string]: string } = {
+    'Еда': '#10b981',
+    'Транспорт': '#3b82f6',
+    'Жильё': '#f59e0b',
+    'Развлечения': '#8b5cf6',
+    'Одежда': '#ec4899',
+    'Здоровье': '#ef4444',
+    'Другое': '#6b7280'
+  }
+
+  const total = expensesByCategory.reduce((sum, e) => sum + e.amount, 0)
+  
+  // SVG Pie Chart
+  const radius = 60
+  const centerX = 100
+  const centerY = 100
+  let currentAngle = -Math.PI / 2
+  
+  const slices = expensesByCategory.map(item => {
+    const sliceAngle = (item.amount / total) * Math.PI * 2
+    const startAngle = currentAngle
+    const endAngle = currentAngle + sliceAngle
+    
+    const x1 = centerX + radius * Math.cos(startAngle)
+    const y1 = centerY + radius * Math.sin(startAngle)
+    const x2 = centerX + radius * Math.cos(endAngle)
+    const y2 = centerY + radius * Math.sin(endAngle)
+    
+    const largeArc = sliceAngle > Math.PI ? 1 : 0
+    
+    const path = [
+      `M ${centerX} ${centerY}`,
+      `L ${x1} ${y1}`,
+      `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`,
+      'Z'
+    ].join(' ')
+    
+    currentAngle = endAngle
+    
+    return { ...item, path, color: colors[item.category] }
+  })
+
+  return (
+    <div className="card">
+      <h3 className="font-semibold text-gray-800 mb-4">Расходы по категориям</h3>
+      <div className="flex flex-col lg:flex-row items-center justify-center gap-6">
+        {/* Pie Chart SVG */}
+        <svg width="200" height="200" viewBox="0 0 200 200" className="flex-shrink-0">
+          {slices.map((slice, index) => (
+            <path
+              key={index}
+              d={slice.path}
+              fill={slice.color}
+              stroke="white"
+              strokeWidth="2"
+              opacity="0.8"
+            />
+          ))}
+        </svg>
+        
+        {/* Legend */}
+        <div className="space-y-2 flex-1">
+          {slices.map((item, index) => (
+            <div key={index} className="flex items-center gap-2 justify-between">
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: item.color }}
+                />
+                <span className="text-sm text-gray-700">{item.category}</span>
+              </div>
+              <span className="text-sm font-medium text-gray-800">
+                {item.amount.toLocaleString()} ₽
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function FinanceClient({ initialGoals, initialExpenses }: FinanceClientProps) {
   const [goals, setGoals] = useState<GoalWithProfile[]>(initialGoals)
   const [expenses, setExpenses] = useState<ExpenseWithProfile[]>(initialExpenses)
@@ -521,6 +622,13 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
         {/* Expenses Section */}
         <div>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Последние траты</h2>
+          
+          {/* Expense Chart */}
+          {expenses.length > 0 && (
+            <div className="mb-6">
+              <ExpensePieChart expenses={expenses} />
+            </div>
+          )}
           
           <form onSubmit={addExpense} className="card mb-4">
             <div className="flex flex-col sm:flex-row gap-3">
