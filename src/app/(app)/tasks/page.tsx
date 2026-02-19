@@ -4,11 +4,13 @@ import TasksClient from './TasksClient'
 export default async function TasksPage() {
   const supabase = await createClient()
   
-  // Get all todos
-  const { data: todos } = await supabase
+  // Get all todos with profiles
+  const { data: todos, error } = await supabase
     .from('todos')
-    .select('*')
+    .select('*, profiles:user_id(full_name, avatar_url)')
     .order('created_at', { ascending: false })
+
+  console.log('Tasks page loaded:', { todosCount: todos?.length, error })
 
   return <TasksClient initialTodos={todos || []} />
 }

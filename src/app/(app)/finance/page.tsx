@@ -4,10 +4,10 @@ import FinanceClient from './FinanceClient'
 export default async function FinancePage() {
   const supabase = await createClient()
   
-  // Get goals
+  // Get goals with profiles
   const { data: goals } = await supabase
     .from('goals')
-    .select('*')
+    .select('*, profiles:user_id(full_name, avatar_url)')
     .order('created_at', { ascending: true })
 
   // Get expenses for current month
@@ -16,7 +16,7 @@ export default async function FinancePage() {
   
   const { data: expenses } = await supabase
     .from('expenses')
-    .select('*')
+    .select('*, profiles:user_id(full_name, avatar_url)')
     .gte('date', firstDayOfMonth)
     .order('date', { ascending: false })
 

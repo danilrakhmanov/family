@@ -43,7 +43,7 @@ export default function TasksClient({ initialTodos }: TasksClientProps) {
           text: newTask.trim(),
           user_id: user!.id
         })
-        .select()
+        .select('*, profiles:user_id(full_name, avatar_url)')
         .single()
 
       if (error) throw error
@@ -118,15 +118,17 @@ export default function TasksClient({ initialTodos }: TasksClientProps) {
     setActionLoading(id)
     
     try {
-      const { error } = await supabase
+      const { data: updatedTodo, error } = await supabase
         .from('todos')
-        .update({ text: editText.trim() })
+        .update({ text: editText })
         .eq('id', id)
+        .select('*, profiles:user_id(full_name, avatar_url)')
+        .single()
 
       if (error) throw error
 
       setTodos(todos.map(todo => 
-        todo.id === id ? { ...todo, text: editText.trim() } : todo
+        todo.id === id ? updatedTodo : todo
       ))
       setEditingId(null)
       setEditText('')

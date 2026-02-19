@@ -75,7 +75,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
           color: newEventColor,
           user_id: user!.id
         })
-        .select()
+        .select('*, profiles:user_id(full_name, avatar_url)')
         .single()
 
       if (error) throw error

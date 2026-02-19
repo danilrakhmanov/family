@@ -98,7 +98,7 @@ export default function MoviesClient({ initialMovies }: MoviesClientProps) {
           kinopoisk_id: kinopoiskMovie.id.toString(),
           user_id: user!.id
         })
-        .select()
+        .select('*, profiles:user_id(full_name, avatar_url)')
         .single()
 
       if (error) throw error

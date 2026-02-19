@@ -4,11 +4,13 @@ import ShoppingClient from './ShoppingClient'
 export default async function ShoppingPage() {
   const supabase = await createClient()
   
-  // Get all shopping items with profile info
-  const { data: items } = await supabase
+  // Get all shopping items with profiles
+  const { data: items, error } = await supabase
     .from('shopping_items')
-    .select('*')
+    .select('*, profiles:user_id(full_name, avatar_url)')
     .order('created_at', { ascending: false })
+
+  console.log('Shopping page loaded:', { itemsCount: items?.length, error })
 
   return <ShoppingClient initialItems={items || []} />
 }

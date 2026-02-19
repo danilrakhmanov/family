@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { 
   CheckSquare, 
   ShoppingCart, 
@@ -19,10 +19,10 @@ import {
 import { useState } from 'react'
 import Avatar from './Avatar'
 import type { Profile } from '@/lib/database.types'
+import { logout } from '@/app/(app)/actions'
 
 interface SidebarProps {
   profile: Profile | null
-  onLogout: () => void
 }
 
 const navItems = [
@@ -37,9 +37,15 @@ const navItems = [
   { href: 'https://danilrakhmanov.github.io/recepti/', label: 'Рецепты', icon: ChefHat, emoji: 'chef', external: true },
 ]
 
-export default function Sidebar({ profile, onLogout }: SidebarProps) {
+export default function Sidebar({ profile }: SidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
+
+  const handleLogout = async () => {
+    await logout()
+    router.push('/')
+  }
 
   return (
     <>
@@ -145,7 +151,7 @@ export default function Sidebar({ profile, onLogout }: SidebarProps) {
             </Link>
             
             <button
-              onClick={onLogout}
+              onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-danger/10 hover:text-danger transition-colors mt-1"
             >
               <LogOut size={20} />

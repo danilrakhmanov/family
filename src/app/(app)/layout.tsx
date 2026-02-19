@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
-import { logout } from './actions'
 
 export default async function AppLayout({
   children,
@@ -27,7 +26,7 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen bg-background flex">
-      <Sidebar profile={profile} onLogout={logout} />
+      <Sidebar profile={profile} />
       <main className="flex-1 p-4 lg:p-8 overflow-auto">
         <div className="max-w-6xl mx-auto">
           {children}

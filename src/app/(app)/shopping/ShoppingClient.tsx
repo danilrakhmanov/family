@@ -45,7 +45,7 @@ export default function ShoppingClient({ initialItems }: ShoppingClientProps) {
           estimated_price: newPrice ? parseFloat(newPrice) : null,
           user_id: user!.id
         })
-        .select()
+        .select('*, profiles:user_id(full_name, avatar_url)')
         .single()
 
       if (error) throw error
@@ -118,22 +118,20 @@ export default function ShoppingClient({ initialItems }: ShoppingClientProps) {
     setActionLoading(id)
     
     try {
-      const { error } = await supabase
+      const { data: updatedItem, error } = await supabase
         .from('shopping_items')
         .update({ 
           name: editName.trim(),
           estimated_price: editPrice ? parseFloat(editPrice) : null
         })
         .eq('id', id)
+        .select('*, profiles:user_id(full_name, avatar_url)')
+        .single()
 
       if (error) throw error
 
       setItems(items.map(item => 
-        item.id === id ? { 
-          ...item, 
-          name: editName.trim(),
-          estimated_price: editPrice ? parseFloat(editPrice) : null
-        } : item
+        item.id === id ? updatedItem : item
       ))
       setEditingId(null)
       setEditName('')

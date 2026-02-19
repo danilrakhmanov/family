@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import ProfileClient from './ProfileClient'
 
 export default async function ProfilePage() {
@@ -6,10 +7,14 @@ export default async function ProfilePage() {
   
   const { data: { user } } = await supabase.auth.getUser()
   
+  if (!user) {
+    redirect('/')
+  }
+  
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', user!.id)
+    .eq('id', user.id)
     .single()
 
   return <ProfileClient profile={profile} />

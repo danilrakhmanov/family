@@ -77,7 +77,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
           target_amount: parseFloat(newGoalAmount),
           user_id: user!.id
         })
-        .select()
+        .select('*, profiles:user_id(full_name, avatar_url)')
         .single()
 
       if (error) throw error
@@ -205,7 +205,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
           category: newExpenseCategory,
           user_id: user!.id
         })
-        .select()
+        .select('*, profiles:user_id(full_name, avatar_url)')
         .single()
 
       if (error) throw error

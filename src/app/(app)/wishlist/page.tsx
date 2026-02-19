@@ -4,12 +4,14 @@ import WishlistClient from './WishlistClient'
 export default async function WishlistPage() {
   const supabase = await createClient()
   
-  // Get all wishes
-  const { data: wishes } = await supabase
+  // Get all wishes with profiles
+  const { data: wishes, error } = await supabase
     .from('wishes')
-    .select('*')
+    .select('*, profiles:user_id(full_name, avatar_url)')
     .order('priority', { ascending: false })
     .order('created_at', { ascending: false })
+
+  console.log('Wishlist page loaded:', { wishesCount: wishes?.length, error })
 
   return <WishlistClient initialWishes={wishes || []} />
 }

@@ -50,7 +50,7 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
           happened_at: newDate,
           user_id: user!.id
         })
-        .select()
+        .select('*, profiles:user_id(full_name, avatar_url)')
         .single()
 
       if (error) throw error
@@ -283,7 +283,7 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
                     </span>
                     <span className="text-gray-400">·</span>
                     <span className="text-sm text-gray-500">
-                      {formatDistanceToNow(new Date(memory.happened_at), { addSuffix: true, locale: ru })}
+                      {formatDistanceToNow(new Date(memory.created_at), { addSuffix: true, locale: ru })}
                     </span>
                   </div>
                   

@@ -80,19 +80,19 @@ export default function HomePage() {
           
           <div className="grid grid-cols-2 gap-4 mt-8">
             {[
-              { emoji: 'clipboard', label: 'Задачи' },
-              { emoji: 'shopping-cart', label: 'Покупки' },
-              { emoji: 'movie', label: 'Фильмы' },
-              { emoji: 'wallet', label: 'Финансы' },
-              { emoji: 'calendar', label: 'Календарь' },
-              { emoji: 'gift', label: 'Вишлист' },
+              { ru: 'Задачи', en: 'Tasks' },
+              { ru: 'Покупки', en: 'Shopping' },
+              { ru: 'Фильмы', en: 'Movies' },
+              { ru: 'Финансы', en: 'Finance' },
+              { ru: 'Календарь', en: 'Calendar' },
+              { ru: 'Вишлист', en: 'Wishlist' },
             ].map((item) => (
               <div 
-                key={item.label}
+                key={item.ru}
                 className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-white"
               >
-                <span className="text-2xl">{item.emoji}</span>
-                <p className="mt-2 font-medium">{item.label}</p>
+                <p className="text-2xl font-semibold">{item.ru}</p>
+                <p className="mt-1 text-xs text-white/60">{item.en}</p>
               </div>
             ))}
           </div>
