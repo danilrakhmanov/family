@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import TelegramWebAppProvider from "@/components/TelegramWebAppProvider";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -9,8 +10,8 @@ const geistSans = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "OurHome - Shared Dashboard for Couples",
-  description: "A cozy space for couples to manage their shared life together",
+  title: "Наш Дом - Приложение для пар",
+  description: "Уютное пространство для двоих",
 };
 
 export default function RootLayout({
@@ -19,9 +20,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ru">
       <body className={`${geistSans.variable} antialiased`}>
-        {children}
+        <TelegramWebAppProvider>
+          {children}
+        </TelegramWebAppProvider>
       </body>
     </html>
   );

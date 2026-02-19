@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Heart, Mail, Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react'
@@ -17,6 +17,26 @@ export default function HomePage() {
   
   const router = useRouter()
   const supabase = createClient()
+
+  // Telegram Web App initialization
+  useEffect(() => {
+    const script = document.createElement('script')
+    script.src = 'https://telegram.org/js/telegram-web-app.js'
+    script.async = true
+    script.onload = () => {
+      if (window.Telegram?.WebApp) {
+        window.Telegram.WebApp.ready()
+        window.Telegram.WebApp.expand()
+      }
+    }
+    document.body.appendChild(script)
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script)
+      }
+    }
+  }, [])
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
