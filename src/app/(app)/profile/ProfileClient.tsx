@@ -40,6 +40,7 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
   const supabase = createClient()
 
   // Load partnership info on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadPartnership()
   }, [])
@@ -62,7 +63,7 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
       } else {
         setPartnership(null)
       }
-    } catch (err) {
+    } catch {
       console.log('No partnership found')
       setPartnership(null)
     } finally {
@@ -158,7 +159,7 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
         throw new Error('Пользователь с таким email не найден')
       }
 
-      const partnerId = (partners[0] as any).id
+      const partnerId = partners[0].id
       if (partnerId === user.id) {
         throw new Error('Вы не можете добавить сами себя')
       }
@@ -236,7 +237,7 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
         // If delete fails, try updating status to 'broken'
         const { error: updateError } = await supabase
           .from('partnerships')
-          .update({ status: 'broken' as any })
+          .update({ status: 'broken' })
           .eq('id', partnership.id)
         
         if (updateError) {

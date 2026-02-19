@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/Avatar'
-import { Plus, Trash2, Loader2, Gift, Star, Lock, Check, Pencil, Save, X } from 'lucide-react'
+import { Plus, Trash2, Loader2, Gift, Star, Lock, Check, Pencil, X } from 'lucide-react'
 import type { Wish } from '@/lib/database.types'
 
 type WishWithProfile = Wish & {
