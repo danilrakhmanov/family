@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { Home, Mail, Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Heart, Mail, Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function HomePage() {
   const [isLogin, setIsLogin] = useState(true)
@@ -64,7 +64,7 @@ export default function HomePage() {
         <div>
           <div className="flex items-center gap-3">
             <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Home className="w-8 h-8 text-white" />
+              <Heart className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-white">Наш Дом</h1>
           </div>
@@ -108,12 +108,8 @@ export default function HomePage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8">
-            <div className="inline-flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <Home className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold text-gray-800">Наш Дом</h1>
-            </div>
+            <h1 className="text-3xl font-bold text-gray-800">Наш Дом</h1>
+            <p className="text-gray-500 mt-1">Для двоих</p>
           </div>
 
           <div className="card p-8">

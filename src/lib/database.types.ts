@@ -89,6 +89,10 @@ export interface Database {
           kinopoisk_id: string | null
           comment: string | null
           watched: boolean
+          rating: number | null
+          genres: string[] | null
+          year: number | null
+          description: string | null
           user_id: string
           created_at: string
         }
@@ -99,6 +103,10 @@ export interface Database {
           kinopoisk_id?: string | null
           comment?: string | null
           watched?: boolean
+          rating?: number | null
+          genres?: string[] | null
+          year?: number | null
+          description?: string | null
           user_id: string
           created_at?: string
         }
@@ -109,6 +117,10 @@ export interface Database {
           kinopoisk_id?: string | null
           comment?: string | null
           watched?: boolean
+          rating?: number | null
+          genres?: string[] | null
+          year?: number | null
+          description?: string | null
           user_id?: string
           created_at?: string
         }

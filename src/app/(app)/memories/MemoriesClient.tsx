@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/Avatar'
-import { Plus, Trash2, Loader2, BookHeart, Shuffle, X, Calendar, Image as ImageIcon, Pencil, Save } from 'lucide-react'
+import { Plus, Trash2, Loader2, BookHeart, Shuffle, X, Calendar, Image as ImageIcon, Pencil, Save, Upload, FileImage } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import type { Memory } from '@/lib/database.types'
@@ -30,8 +30,88 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
   const [randomMemory, setRandomMemory] = useState<MemoryWithProfile | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [expandedImage, setExpandedImage] = useState<string | null>(null)
   
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
+
+  // Compress image using Canvas
+  const compressImage = async (file: File, maxWidth = 1200, quality = 0.8): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          let width = img.width
+          let height = img.height
+
+          // Calculate new dimensions
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width
+            width = maxWidth
+          }
+
+          canvas.width = width
+          canvas.height = height
+
+          const ctx = canvas.getContext('2d')
+          if (!ctx) {
+            reject(new Error('Canvas context not available'))
+            return
+          }
+
+          ctx.drawImage(img, 0, 0, width, height)
+          canvas.toBlob(async (blob) => {
+            if (blob) {
+              // Convert blob to File
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+              })
+              resolve(compressedFile)
+            } else {
+              reject(new Error('Failed to compress image'))
+            }
+          }, 'image/jpeg', quality)
+        }
+        img.onerror = () => reject(new Error('Failed to load image'))
+        img.src = e.target?.result as string
+      }
+      reader.onerror = () => reject(new Error('Failed to read file'))
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Пожалуйста, выберите изображение')
+      return
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Размер файла не должен превышать 10MB')
+      return
+    }
+
+    setSelectedFile(file)
+    // Create preview URL
+    const url = URL.createObjectURL(file)
+    setPreviewUrl(url)
+    setNewImageUrl(url)
+  }
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
+  }
 
   const addMemory = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,11 +124,49 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
       
       if (!user) return
       
+      let finalImageUrl = newImageUrl.trim() || null
+
+      // Upload image if selected
+      if (selectedFile) {
+        setUploadingImage(true)
+        try {
+          // Compress image
+          const compressedFile = await compressImage(selectedFile)
+          
+          // Create filename
+          const fileName = `memory-${user.id}-${Date.now()}.jpg`
+          
+          // Upload compressed image
+          const { error: uploadError } = await supabase.storage
+            .from('memories')
+            .upload(fileName, compressedFile, {
+              contentType: 'image/jpeg',
+              upsert: false
+            })
+
+          if (uploadError) {
+            console.error('Upload error:', uploadError)
+            // Continue without image if upload fails
+          } else {
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+              .from('memories')
+              .getPublicUrl(fileName)
+            finalImageUrl = publicUrl
+          }
+        } catch (uploadError) {
+          console.error('Image upload error:', uploadError)
+          // Continue without image if compression/upload fails
+        } finally {
+          setUploadingImage(false)
+        }
+      }
+      
       const { data, error } = await supabase
         .from('memories')
         .insert({
           content: newContent.trim(),
-          image_url: newImageUrl.trim() || null,
+          image_url: finalImageUrl,
           happened_at: newDate,
           user_id: user.id
         })
@@ -62,6 +180,9 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
       setNewImageUrl('')
       setNewDate(new Date().toISOString().split('T')[0])
       setShowAddForm(false)
+      setSelectedFile(null)
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+      setPreviewUrl(null)
     } catch (error) {
       console.error('Error adding memory:', error)
     } finally {
@@ -132,7 +253,7 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
 
   return (
     <div className="pt-12 lg:pt-0">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Воспоминания</h1>
           <p className="text-gray-500">Ваши совместные моменты</p>
@@ -140,10 +261,10 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
         {memories.length > 0 && (
           <button
             onClick={showRandomMemory}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary flex items-center gap-2 whitespace-nowrap"
           >
                         <Shuffle className="w-5 h-5" />
-            Случайное воспоминание
+            Случайное
           </button>
         )}
       </div>
@@ -191,32 +312,89 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <ImageIcon className="w-4 h-4 inline mr-1" />
-                Image URL (optional)
+                Изображение
               </label>
               <input
-                type="url"
-                value={newImageUrl}
-                onChange={(e) => setNewImageUrl(e.target.value)}
-                placeholder="https://..."
-                className="input"
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
               />
+              
+              {previewUrl ? (
+                <div className="relative mt-2">
+                  <img 
+                    src={previewUrl} 
+                    alt="Preview" 
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedFile(null)
+                      setPreviewUrl(null)
+                      setNewImageUrl('')
+                      if (fileInputRef.current) fileInputRef.current.value = ''
+                    }}
+                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleUploadClick}
+                    disabled={uploadingImage}
+                    className="flex-1 py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors flex items-center justify-center gap-2 text-gray-600"
+                  >
+                    {uploadingImage ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    Загрузить фото
+                  </button>
+                </div>
+              )}
+              
+              <div className="mt-2">
+                <input
+                  type="url"
+                  value={newImageUrl}
+                  onChange={(e) => {
+                    setNewImageUrl(e.target.value)
+                    setSelectedFile(null)
+                    setPreviewUrl(null)
+                  }}
+                  placeholder="или вставьте ссылку на изображение"
+                  className="input text-sm"
+                />
+              </div>
             </div>
           </div>
 
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setShowAddForm(false)}
+              onClick={() => {
+                setShowAddForm(false)
+                setSelectedFile(null)
+                if (previewUrl) URL.revokeObjectURL(previewUrl)
+                setPreviewUrl(null)
+              }}
               className="btn-secondary flex-1"
             >
               Отмена
             </button>
             <button
               type="submit"
-              disabled={addingMemory || !newContent.trim()}
+              disabled={addingMemory || !newContent.trim() || uploadingImage}
               className="btn-primary flex-1 flex items-center justify-center gap-2"
             >
-                            {addingMemory ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Сохранить'}
+              {addingMemory || uploadingImage ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Сохранить'}
             </button>
           </div>
         </form>
@@ -260,6 +438,27 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Image Lightbox Modal */}
+      {expandedImage && (
+        <div 
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
+          onClick={() => setExpandedImage(null)}
+        >
+          <button
+            className="absolute top-4 right-4 p-2 text-white hover:bg-white/20 rounded-full"
+            onClick={() => setExpandedImage(null)}
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <img
+            src={expandedImage}
+            alt="Expanded memory"
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
 
@@ -321,11 +520,16 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
                   
                   {/* Image */}
                   {memory.image_url && (
-                    <img
-                      src={memory.image_url}
-                      alt="Memory"
-                      className="mt-3 rounded-xl max-h-64 object-cover"
-                    />
+                    <button
+                      onClick={() => setExpandedImage(memory.image_url)}
+                      className="mt-3 rounded-xl max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                    >
+                      <img
+                        src={memory.image_url}
+                        alt="Memory"
+                        className="w-full max-h-64 object-cover rounded-xl"
+                      />
+                    </button>
                   )}
                   
                   {/* Date */}

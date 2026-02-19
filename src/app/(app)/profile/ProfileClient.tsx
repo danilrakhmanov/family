@@ -218,6 +218,45 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
     }
   }
 
+  const breakPartnership = async () => {
+    if (!partnership) return
+    if (!confirm('Вы уверены, что хотите разорвать партнёрство? Все общие данные станут недоступны.')) return
+
+    setSendingInvite(true)
+
+    try {
+      // Try to delete first
+      const { error: deleteError } = await supabase
+        .from('partnerships')
+        .delete()
+        .eq('id', partnership.id)
+
+      if (deleteError) {
+        console.log('Delete failed, trying status update:', deleteError)
+        // If delete fails, try updating status to 'broken'
+        const { error: updateError } = await supabase
+          .from('partnerships')
+          .update({ status: 'broken' as any })
+          .eq('id', partnership.id)
+        
+        if (updateError) {
+          console.error('Update error:', updateError)
+          throw updateError
+        }
+      }
+
+      setMessage({ type: 'success', text: 'Партнёрство разорвано' })
+      setPartnership(null)
+      await loadPartnership()
+      router.refresh()
+    } catch (error) {
+      console.error('Error breaking partnership:', error)
+      setMessage({ type: 'error', text: 'Ошибка: ' + (error as Error).message })
+    } finally {
+      setSendingInvite(false)
+    }
+  }
+
   const getPartnerName = () => {
     if (!partnership || !profile) return ''
     return partnership.user_id_1 === profile.id 
@@ -337,6 +376,18 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
                 <p className="text-sm text-gray-500">Вы видите общие данные</p>
               </div>
             </div>
+            <button
+              onClick={breakPartnership}
+              disabled={sendingInvite}
+              className="mt-4 w-full py-2 px-4 border border-danger text-danger rounded-lg hover:bg-danger/5 transition-colors flex items-center justify-center gap-2"
+            >
+              {sendingInvite ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <X className="w-4 h-4" />
+              )}
+              Разорвать партнёрство
+            </button>
           </div>
         ) : partnership?.status === 'pending' ? (
           <div>

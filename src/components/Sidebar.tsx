@@ -14,7 +14,8 @@ import {
   X,
   LogOut,
   User,
-  ChefHat
+  ChefHat,
+  Heart
 } from 'lucide-react'
 import { useState } from 'react'
 import Avatar from './Avatar'
@@ -80,7 +81,7 @@ export default function Sidebar({ profile }: SidebarProps) {
           <div className="mb-8 pt-12 lg:pt-0">
             <Link href="/dashboard" className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <span className="text-white text-2xl">home</span>
+                <Heart className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-gray-800">Наш Дом</h1>
