@@ -35,7 +35,7 @@ const navItems = [
   { href: '/calendar', label: 'Календарь', icon: Calendar, emoji: 'calendar' },
   { href: '/wishlist', label: 'Вишлист', icon: Gift, emoji: 'gift' },
   { href: '/memories', label: 'Воспоминания', icon: BookHeart, emoji: 'book' },
-  { href: 'https://danilrakhmanov.github.io/recepti/', label: 'Рецепты', icon: ChefHat, emoji: 'chef', external: true },
+  { href: 'https://recipes-love.vercel.app/', label: 'Рецепты', icon: ChefHat, emoji: 'chef', external: true },
 ]
 
 export default function Sidebar({ profile }: SidebarProps) {
