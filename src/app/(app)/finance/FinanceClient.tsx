@@ -387,37 +387,37 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
   const totalTarget = goals.reduce((sum, g) => sum + g.target_amount, 0)
 
   return (
-    <div className="pt-12 lg:pt-0">
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">Финансы</h1>
-      <p className="text-gray-500 mb-6">Управляйте общими финансами</p>
+    <div className="pt-12 lg:pt-0 px-3 sm:px-0">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1 sm:mb-2">Финансы</h1>
+      <p className="text-sm sm:text-base text-gray-500 mb-4 sm:mb-6">Управляйте общими финансами</p>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div className="card flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-success/10">
+          <div className="p-3 rounded-xl bg-success/10 flex-shrink-0">
             <PiggyBank className="w-6 h-6 text-success" />
           </div>
-          <div>
-            <p className="text-sm text-gray-500">Накоплено</p>
-            <p className="text-xl font-bold text-gray-800">{totalSaved.toLocaleString()} ₽</p>
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm text-gray-500">Накоплено</p>
+            <p className="text-lg sm:text-xl font-bold text-gray-800 truncate">{totalSaved.toLocaleString()} ₽</p>
           </div>
         </div>
         <div className="card flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-info/10">
+          <div className="p-3 rounded-xl bg-info/10 flex-shrink-0">
             <Target className="w-6 h-6 text-info" />
           </div>
-          <div>
-            <p className="text-sm text-gray-500">Цель</p>
-            <p className="text-xl font-bold text-gray-800">{totalTarget.toLocaleString()} ₽</p>
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm text-gray-500">Цель</p>
+            <p className="text-lg sm:text-xl font-bold text-gray-800 truncate">{totalTarget.toLocaleString()} ₽</p>
           </div>
         </div>
         <div className="card flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-warning/10">
+          <div className="p-3 rounded-xl bg-warning/10 flex-shrink-0">
             <TrendingUp className="w-6 h-6 text-warning" />
           </div>
-          <div>
-            <p className="text-sm text-gray-500">За этот месяц</p>
-            <p className="text-xl font-bold text-gray-800">{totalExpenses.toLocaleString()} ₽</p>
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm text-gray-500">За месяц</p>
+            <p className="text-lg sm:text-xl font-bold text-gray-800 truncate">{totalExpenses.toLocaleString()} ₽</p>
           </div>
         </div>
       </div>
