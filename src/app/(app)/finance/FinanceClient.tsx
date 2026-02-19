@@ -655,22 +655,22 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
           )}
           
           <form onSubmit={addExpense} className="card mb-4">
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 lg:gap-3">
               <input
                 type="text"
                 value={newExpenseDesc}
                 onChange={(e) => setNewExpenseDesc(e.target.value)}
                 placeholder="На что потратили?"
-                className="input flex-1"
+                className="input flex-1 text-sm lg:text-base"
               />
-              <div className="relative sm:w-28">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">₽</span>
+              <div className="relative sm:w-24 lg:w-28">
+                <span className="absolute left-2 lg:left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm">₽</span>
                 <input
                   type="number"
                   value={newExpenseAmount}
                   onChange={(e) => setNewExpenseAmount(e.target.value)}
                   placeholder="Сумма"
-                  className="input pl-8 w-full"
+                  className="input pl-6 lg:pl-8 w-full text-sm"
                   step="0.01"
                   min="0"
                 />
@@ -678,7 +678,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
               <select
                 value={newExpenseCategory}
                 onChange={(e) => setNewExpenseCategory(e.target.value)}
-                className="input w-full sm:w-32"
+                className="input w-full sm:w-24 lg:w-32 text-sm"
               >
                 {expenseCategories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
@@ -687,21 +687,21 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
               <button
                 type="submit"
                 disabled={addingExpense || !newExpenseDesc.trim() || !newExpenseAmount}
-                className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto whitespace-nowrap px-4"
+                className="btn-primary flex items-center justify-center gap-1 lg:gap-2 w-full sm:w-auto whitespace-nowrap px-3 lg:px-4 text-sm"
               >
                 {addingExpense ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-4 h-4" />
                 )}
-                Добавить
+                <span className="hidden xs:inline">Добавить</span>
               </button>
             </div>
           </form>
 
           <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-hide">
             {expenses.length > 0 ? expenses.map(expense => (
-              <div key={expense.id} className="card flex items-center gap-4 group">
+              <div key={expense.id} className="card flex items-center gap-2 lg:gap-4 group py-2">
                 {editingExpenseId === expense.id ? (
                   <>
                     <div className="flex-1 min-w-0 space-y-2">
@@ -709,7 +709,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
                         type="text"
                         value={editExpenseDesc}
                         onChange={(e) => setEditExpenseDesc(e.target.value)}
-                        className="input w-full"
+                        className="input w-full text-sm"
                         placeholder="Описание"
                       />
                       <div className="flex gap-2">
@@ -717,7 +717,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
                           type="number"
                           value={editExpenseAmount}
                           onChange={(e) => setEditExpenseAmount(e.target.value)}
-                          className="input flex-1"
+                          className="input flex-1 text-sm"
                           placeholder="Сумма"
                           step="0.01"
                         />
@@ -740,9 +740,9 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
                 ) : (
                   <>
                     <div className="flex-1 min-w-0">
-                      <p className="text-gray-700 truncate">{expense.description}</p>
+                      <p className="text-sm lg:text-base text-gray-700 truncate">{expense.description}</p>
                       <p className="text-xs text-gray-400">
-                        {expense.category && <span className="mr-2">{expense.category}</span>}
+                        {expense.category && <span className="mr-1 lg:mr-2">{expense.category}</span>}
                         {new Date(expense.date).toLocaleDateString()}
                       </p>
                     </div>
@@ -756,19 +756,19 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
                     />
                     <button
                       onClick={() => startEditExpense(expense)}
-                      className="p-2 text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
+                      className="p-1 lg:p-2 text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Pencil className="w-3 lg:w-4 h-3 lg:h-4" />
                     </button>
                     <button
                       onClick={() => deleteExpense(expense.id)}
                       disabled={actionLoading === expense.id}
-                      className="p-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-all"
+                      className="p-1 lg:p-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
                     >
                       {actionLoading === expense.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-3 lg:w-4 h-3 lg:h-4 animate-spin" />
                       ) : (
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 lg:w-4 h-3 lg:h-4" />
                       )}
                     </button>
                   </>
