@@ -261,7 +261,7 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
             />
           </div>
           <p className="text-sm text-gray-500 mt-3">
-            Click the camera icon to upload a new avatar
+            Нажмите на иконку камеры для загрузки нового аватара
           </p>
         </div>
 
@@ -269,7 +269,7 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name
+              Имя
             </label>
             <input
               type="text"
@@ -300,12 +300,12 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
             {loading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Saving...
+                Сохранение...
               </>
             ) : (
               <>
                 <Save className="w-5 h-5" />
-                                Сохранить изменения
+                Сохранить изменения
               </>
             )}
           </button>

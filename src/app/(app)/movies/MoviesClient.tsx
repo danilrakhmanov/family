@@ -90,13 +90,15 @@ export default function MoviesClient({ initialMovies }: MoviesClientProps) {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
+      if (!user) return
+      
       const { data, error } = await supabase
         .from('movies')
         .insert({
           title: kinopoiskMovie.name,
           poster_url: kinopoiskMovie.poster?.url || null,
           kinopoisk_id: kinopoiskMovie.id.toString(),
-          user_id: user!.id
+          user_id: user.id
         })
         .select('*, profiles:user_id(full_name, avatar_url)')
         .single()

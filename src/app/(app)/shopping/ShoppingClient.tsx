@@ -38,12 +38,20 @@ export default function ShoppingClient({ initialItems }: ShoppingClientProps) {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
+      if (!user) return
+      
+      const price = newPrice ? parseFloat(newPrice) : null
+      if (newPrice && (isNaN(price as number) || (price as number) < 0)) {
+        console.error('Некорректная цена')
+        return
+      }
+      
       const { data, error } = await supabase
         .from('shopping_items')
         .insert({
           name: newItem.trim(),
-          estimated_price: newPrice ? parseFloat(newPrice) : null,
-          user_id: user!.id
+          estimated_price: price,
+          user_id: user.id
         })
         .select('*, profiles:user_id(full_name, avatar_url)')
         .single()

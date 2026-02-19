@@ -39,7 +39,7 @@ export default function Avatar({ url, name, size = 'md', className = '' }: Avata
       className={`${sizeClass} rounded-full bg-gray-200 flex items-center justify-center ${className}`}
     >
       {name ? (
-        <span className="font-medium text-gray-600">{initial}</span>
+        <span className="font-medium text-gray-600 leading-none select-none">{initial}</span>
       ) : (
         <User className="w-1/2 h-1/2 text-gray-400" />
       )}

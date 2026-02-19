@@ -171,12 +171,24 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
+      if (!user) {
+        setAddingGoal(false)
+        return
+      }
+      
+      const amount = parseFloat(newGoalAmount)
+      if (isNaN(amount) || amount <= 0) {
+        console.error('Некорректная сумма цели')
+        setAddingGoal(false)
+        return
+      }
+      
       const { data, error } = await supabase
         .from('goals')
         .insert({
           name: newGoalName.trim(),
-          target_amount: parseFloat(newGoalAmount),
-          user_id: user!.id
+          target_amount: amount,
+          user_id: user.id
         })
         .select('*, profiles:user_id(full_name, avatar_url)')
         .single()
@@ -298,13 +310,25 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
+      if (!user) {
+        setAddingExpense(false)
+        return
+      }
+      
+      const amount = parseFloat(newExpenseAmount)
+      if (isNaN(amount) || amount <= 0) {
+        console.error('Некорректная сумма расхода')
+        setAddingExpense(false)
+        return
+      }
+      
       const { data, error } = await supabase
         .from('expenses')
         .insert({
           description: newExpenseDesc.trim(),
-          amount: parseFloat(newExpenseAmount),
+          amount: amount,
           category: newExpenseCategory,
-          user_id: user!.id
+          user_id: user.id
         })
         .select('*, profiles:user_id(full_name, avatar_url)')
         .single()

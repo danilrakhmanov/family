@@ -46,15 +46,23 @@ export default function WishlistClient({ initialWishes }: WishlistClientProps) {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
+      if (!user) return
+      
+      const price = newPrice ? parseFloat(newPrice) : null
+      if (newPrice && (isNaN(price as number) || (price as number) < 0)) {
+        console.error('Некорректная цена')
+        return
+      }
+      
       const { data, error } = await supabase
         .from('wishes')
         .insert({
           title: newTitle.trim(),
-          price: newPrice ? parseFloat(newPrice) : null,
+          price: price,
           priority: newPriority,
           comment: newComment.trim() || null,
           image_url: newEmoji,
-          user_id: user!.id
+          user_id: user.id
         })
         .select('*, profiles:user_id(full_name, avatar_url)')
         .single()
@@ -211,18 +219,19 @@ export default function WishlistClient({ initialWishes }: WishlistClientProps) {
 
   return (
     <div className="pt-12 lg:pt-0">
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">Вишлист</h1>
-      <p className="text-gray-500 mb-6">Идеи подарков друг для друга</p>
+      <h1 className="text-2xl lg:text-3xl font-bold text-gray-800 mb-1 lg:mb-2">Вишлист</h1>
+      <p className="text-gray-500 mb-4 lg:mb-6 text-sm lg:text-base">Идеи подарков друг для друга</p>
 
       {/* Add Wish Button */}
-      <div className="mb-6">
+      <div className="mb-4 lg:mb-6">
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="btn-primary flex items-center gap-2"
+          className="btn-primary flex items-center gap-2 text-sm lg:text-base py-2 lg:py-3"
         >
-                      <Plus className="w-5 h-5" />
-            Добавить желание
-          </button>
+          <Plus className="w-4 lg:w-5 h-4 lg:h-5" />
+          <span className="hidden sm:inline">Добавить желание</span>
+          <span className="sm:hidden">Добавить</span>
+        </button>
       </div>
 
       {/* Add Wish Form */}

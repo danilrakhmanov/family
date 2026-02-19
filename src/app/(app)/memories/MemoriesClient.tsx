@@ -42,13 +42,15 @@ export default function MemoriesClient({ initialMemories }: MemoriesClientProps)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
+      if (!user) return
+      
       const { data, error } = await supabase
         .from('memories')
         .insert({
           content: newContent.trim(),
           image_url: newImageUrl.trim() || null,
           happened_at: newDate,
-          user_id: user!.id
+          user_id: user.id
         })
         .select('*, profiles:user_id(full_name, avatar_url)')
         .single()

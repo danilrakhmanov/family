@@ -37,11 +37,16 @@ export default function TasksClient({ initialTodos }: TasksClientProps) {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
+      if (!user) {
+        setError('Необходимо войти в систему')
+        return
+      }
+      
       const { data, error } = await supabase
         .from('todos')
         .insert({
           text: newTask.trim(),
-          user_id: user!.id
+          user_id: user.id
         })
         .select('*, profiles:user_id(full_name, avatar_url)')
         .single()
@@ -144,56 +149,56 @@ export default function TasksClient({ initialTodos }: TasksClientProps) {
 
   return (
     <div className="pt-12 lg:pt-0">
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">Задачи</h1>
-      <p className="text-gray-500 mb-6">Отслеживайте дела для двоих</p>
+      <h1 className="text-2xl lg:text-3xl font-bold text-gray-800 mb-1 lg:mb-2">Задачи</h1>
+      <p className="text-gray-500 mb-4 lg:mb-6 text-sm lg:text-base">Отслеживайте дела для двоих</p>
 
       {/* Add Task Form */}
-      <form onSubmit={addTask} className="flex gap-3 mb-8">
+      <form onSubmit={addTask} className="flex gap-2 lg:gap-3 mb-6 lg:mb-8">
         <input
           type="text"
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
-          placeholder="Добавить новую задачу..."
-          className="input flex-1"
+          placeholder="Новая задача..."
+          className="input flex-1 text-sm lg:text-base py-2 lg:py-3"
         />
         <button
           type="submit"
           disabled={loading || !newTask.trim()}
-          className="btn-primary flex items-center gap-2"
+          className="btn-primary flex items-center gap-1 lg:gap-2 text-sm lg:text-base py-2 lg:py-3 px-3 lg:px-4"
         >
           {loading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
           )}
-          Добавить
+          <span className="hidden sm:inline">Добавить</span>
         </button>
       </form>
 
       {/* Pending Tasks */}
       {pendingTodos.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-700 mb-3">
+        <div className="mb-6 lg:mb-8">
+          <h2 className="text-base lg:text-lg font-semibold text-gray-700 mb-2 lg:mb-3">
             К выполнению ({pendingTodos.length})
           </h2>
           <div className="space-y-2">
             {pendingTodos.map(todo => (
               <div
                 key={todo.id}
-                className="card flex items-center gap-4 group"
+                className="card flex items-center gap-2 lg:gap-4 group py-2 lg:py-3"
               >
                 <button
                   onClick={() => toggleComplete(todo.id, todo.completed)}
                   disabled={actionLoading === todo.id}
-                  className="w-6 h-6 rounded-lg border-2 border-gray-300 hover:border-primary flex items-center justify-center transition-colors"
+                  className="w-5 lg:w-6 h-5 lg:h-6 rounded-lg border-2 border-gray-300 hover:border-primary flex items-center justify-center transition-colors flex-shrink-0"
                 >
                   {actionLoading === todo.id ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                    <Loader2 className="w-3 lg:w-4 h-3 lg:h-4 animate-spin text-gray-400" />
                   ) : null}
                 </button>
-                <span className="flex-1 text-gray-700">
+                <span className="flex-1 text-sm lg:text-base text-gray-700 min-w-0">
                   {editingId === todo.id ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 lg:gap-2">
                       <input
                         type="text"
                         value={editText}
@@ -207,13 +212,13 @@ export default function TasksClient({ initialTodos }: TasksClientProps) {
                       />
                       <button
                         onClick={() => saveEdit(todo.id)}
-                        className="p-1 text-success hover:text-green-700"
+                        className="p-1 text-success hover:text-green-700 flex-shrink-0"
                       >
                         <Save className="w-4 h-4" />
                       </button>
                       <button
                         onClick={cancelEdit}
-                        className="p-1 text-gray-400 hover:text-gray-600"
+                        className="p-1 text-gray-400 hover:text-gray-600 flex-shrink-0"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -226,20 +231,21 @@ export default function TasksClient({ initialTodos }: TasksClientProps) {
                   url={todo.profiles?.avatar_url ?? null} 
                   name={todo.profiles?.full_name ?? null} 
                   size="sm" 
+                  className="flex-shrink-0"
                 />
                 {editingId === todo.id ? null : (
                   <button
                     onClick={() => startEdit(todo.id, todo.text)}
-                    className="p-2 text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
+                    className="p-1 lg:p-2 text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
                   >
-                    <Pencil className="w-4 h-4" />
+                    <Pencil className="w-3 lg:w-4 h-3 lg:h-4" />
                   </button>
                 )}
                 <button
                   onClick={() => deleteTask(todo.id)}
-                  className="p-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-all"
+                  className="p-1 lg:p-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3 lg:w-4 h-3 lg:h-4" />
                 </button>
               </div>
             ))}
@@ -250,7 +256,7 @@ export default function TasksClient({ initialTodos }: TasksClientProps) {
       {/* Completed Tasks */}
       {completedTodos.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-700 mb-3">
+          <h2 className="text-base lg:text-lg font-semibold text-gray-700 mb-2 lg:mb-3">
             Выполнено ({completedTodos.length})
           </h2>
           <div className="space-y-2">

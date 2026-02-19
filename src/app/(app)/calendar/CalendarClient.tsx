@@ -66,6 +66,11 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
+      if (!user) {
+        setAddingEvent(false)
+        return
+      }
+      
       const { data, error } = await supabase
         .from('events')
         .insert({
@@ -73,7 +78,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
           event_date: selectedDateStr,
           event_time: newEventTime || null,
           color: newEventColor,
-          user_id: user!.id
+          user_id: user.id
         })
         .select('*, profiles:user_id(full_name, avatar_url)')
         .single()
