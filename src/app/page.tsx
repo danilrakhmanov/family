@@ -79,7 +79,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Left side - Decorative */}
+      {/* Left side - Decorative - desktop only */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-secondary to-accent p-12 flex-col justify-between">
         <div>
           <div className="flex items-center gap-3">
@@ -124,10 +124,15 @@ export default function HomePage() {
       </div>
 
       {/* Right side - Auth Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-8 bg-gradient-to-b from-primary/5 via-secondary/5 to-accent/5">
         <div className="w-full max-w-md">
-          {/* Mobile Logo */}
+          {/* Mobile Logo - shown on all mobile screens */}
           <div className="lg:hidden text-center mb-8">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
+                <Heart className="w-6 h-6 text-white" />
+              </div>
+            </div>
             <h1 className="text-3xl font-bold text-gray-800">Наш Дом</h1>
             <p className="text-gray-500 mt-1">Для двоих</p>
           </div>
