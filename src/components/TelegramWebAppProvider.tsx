@@ -17,12 +17,21 @@ export default function TelegramWebAppProvider({
         window.Telegram.WebApp.ready()
         window.Telegram.WebApp.expand()
         
-        // Set theme colors from CSS variables
-        const style = getComputedStyle(document.documentElement)
-        const bgColor = style.getPropertyValue('--background').trim() || '#f8fafc'
-        
-        window.Telegram.WebApp.setHeaderColor(bgColor)
-        window.Telegram.WebApp.setBackgroundColor(bgColor)
+        // Set theme colors (may not work in all Telegram versions)
+        try {
+          const style = getComputedStyle(document.documentElement)
+          const bgColor = style.getPropertyValue('--background').trim() || '#f8fafc'
+          
+          if (window.Telegram.WebApp.setHeaderColor) {
+            window.Telegram.WebApp.setHeaderColor(bgColor)
+          }
+          if (window.Telegram.WebApp.setBackgroundColor) {
+            window.Telegram.WebApp.setBackgroundColor(bgColor)
+          }
+        } catch (e) {
+          // Ignore color setting errors
+          console.log('Telegram color setting not supported')
+        }
       }
     }
     document.body.appendChild(script)
