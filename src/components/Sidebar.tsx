@@ -17,7 +17,7 @@ import {
   ChefHat,
   Heart
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Avatar from './Avatar'
 import type { Profile } from '@/lib/database.types'
 import { logout } from '@/app/(app)/actions'
@@ -42,6 +42,18 @@ export default function Sidebar({ profile }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
 
   const handleLogout = async () => {
     await logout()
@@ -73,6 +85,7 @@ export default function Sidebar({ profile }: SidebarProps) {
           w-72 bg-white/80 backdrop-blur-sm
           transform transition-transform duration-300 ease-in-out
           lg:transform-none
+          overflow-y-auto touch-pan-y
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
