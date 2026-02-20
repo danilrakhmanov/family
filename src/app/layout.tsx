@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     siteName: "Наш Дом",
     images: [
       {
-        url: "https://ourhome-love.vercel.app/og-image.png",
+        url: "https://ourhome-love.vercel.app/og-image.svg",
         width: 1200,
         height: 630,
         alt: "Наш Дом - Приложение для пар",
