@@ -23,6 +23,7 @@ type ExpenseWithProfile = Expense & {
 interface FinanceClientProps {
   initialGoals: GoalWithProfile[]
   initialExpenses: ExpenseWithProfile[]
+  currentUserId: string | null
 }
 
 // Компонент круговой диаграммы расходов по категориям
@@ -126,9 +127,10 @@ function ExpensePieChart({ expenses }: { expenses: ExpenseWithProfile[] }) {
   )
 }
 
-export default function FinanceClient({ initialGoals, initialExpenses }: FinanceClientProps) {
+export default function FinanceClient({ initialGoals, initialExpenses, currentUserId }: FinanceClientProps) {
   const [goals, setGoals] = useState<GoalWithProfile[]>(initialGoals)
   const [expenses, setExpenses] = useState<ExpenseWithProfile[]>(initialExpenses)
+  const [sortFilter, setSortFilter] = useState<'all' | 'mine' | 'partner'>('all')
   
   // Goal form state
   const [newGoalName, setNewGoalName] = useState('')
@@ -149,6 +151,13 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
   
   // Action loading
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  
+  // Filter expenses
+  const filteredExpenses = expenses.filter(e => {
+    if (sortFilter === 'mine') return e.user_id === currentUserId
+    if (sortFilter === 'partner') return e.user_id !== currentUserId
+    return true
+  })
   
   // Edit state
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
@@ -406,7 +415,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
     }
   }
 
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+  const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0)
   const totalSaved = goals.reduce((sum, g) => sum + g.current_amount, 0)
   const totalTarget = goals.reduce((sum, g) => sum + g.target_amount, 0)
 
@@ -699,8 +708,42 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
             </div>
           </form>
 
+          {/* Filter */}
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1 mb-4">
+            <button
+              onClick={() => setSortFilter('all')}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                sortFilter === 'all' 
+                  ? 'bg-white text-gray-800 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              Все
+            </button>
+            <button
+              onClick={() => setSortFilter('mine')}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                sortFilter === 'mine' 
+                  ? 'bg-white text-gray-800 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              Мои
+            </button>
+            <button
+              onClick={() => setSortFilter('partner')}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                sortFilter === 'partner' 
+                  ? 'bg-white text-gray-800 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              Партнёра
+            </button>
+          </div>
+
           <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-hide">
-            {expenses.length > 0 ? expenses.map(expense => (
+            {filteredExpenses.length > 0 ? filteredExpenses.map(expense => (
               <div key={expense.id} className="card flex items-center gap-2 lg:gap-4 group py-2">
                 {editingExpenseId === expense.id ? (
                   <>
@@ -781,7 +824,7 @@ export default function FinanceClient({ initialGoals, initialExpenses }: Finance
             )}
           </div>
 
-          {expenses.length > 0 && (
+          {filteredExpenses.length > 0 && (
             <div className="card mt-4 flex items-center justify-between">
               <span className="text-gray-600 font-medium">Всего за месяц:</span>
               <span className="text-xl font-bold text-primary">

@@ -4,6 +4,9 @@ import FinanceClient from './FinanceClient'
 export default async function FinancePage() {
   const supabase = await createClient()
   
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser()
+  
   // Get goals with profiles
   const { data: goals } = await supabase
     .from('goals')
@@ -20,5 +23,5 @@ export default async function FinancePage() {
     .gte('date', firstDayOfMonth)
     .order('date', { ascending: false })
 
-  return <FinanceClient initialGoals={goals || []} initialExpenses={expenses || []} />
+  return <FinanceClient initialGoals={goals || []} initialExpenses={expenses || []} currentUserId={user?.id || null} />
 }
