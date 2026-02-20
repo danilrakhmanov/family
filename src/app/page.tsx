@@ -225,32 +225,23 @@ export default function HomePage() {
                     onChange={(e) => setAgreedToTerms(e.target.checked)}
                     className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
-                  <label htmlFor="terms" className="text-sm text-gray-600 flex items-start gap-2">
-                    <input
-                      type="checkbox"
-                      id="terms"
-                      checked={agreedToTerms}
-                      onChange={(e) => setAgreedToTerms(e.target.checked)}
-                      className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <span>
-                      Я согласен с{' '}
-                      <button
-                        type="button"
-                        onClick={() => setShowTerms(true)}
-                        className="text-primary hover:underline"
-                      >
-                        условиями использования
-                      </button>
-                      {' '}и{' '}
-                      <button
-                        type="button"
-                        onClick={() => setShowTerms(true)}
-                        className="text-primary hover:underline"
-                      >
-                        политикой конфиденциальности
-                      </button>
-                    </span>
+                  <label htmlFor="terms" className="text-sm text-gray-600">
+                    Я согласен с{' '}
+                    <button
+                      type="button"
+                      onClick={() => setShowTerms(true)}
+                      className="text-primary hover:underline"
+                    >
+                      условиями использования
+                    </button>
+                    {' '}и{' '}
+                    <button
+                      type="button"
+                      onClick={() => setShowTerms(true)}
+                      className="text-primary hover:underline"
+                    >
+                      политикой конфиденциальности
+                    </button>
                   </label>
                 </div>
               )}
@@ -299,10 +290,12 @@ export default function HomePage() {
             <div className="space-y-4 text-sm text-gray-600 max-h-96 overflow-y-auto">
               <section>
                 <h3 className="font-semibold text-gray-900 mb-2">Политика конфиденциальности</h3>
-                <p className="mb-2">Мы собираем минимально необходимые данные:</p>
+                <p className="mb-2">Мы не собираем данные из Telegram. Приложение использует email и пароль для аутентификации.</p>
+                <p className="mb-2">Какие данные обрабатываются:</p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Данные профиля из Telegram</li>
-                  <li>Данные, которые вы добавляете в приложение</li>
+                  <li>Email и пароль для входа</li>
+                  <li>Имя пользователя, которое вы указываете</li>
+                  <li>Данные, которые вы добавляете в приложение (задачи, фильмы, финансы и т.д.)</li>
                   <li>Загруженные изображения</li>
                 </ul>
                 <p className="mt-2">Все данные хранятся на защищённых серверах Supabase.</p>
