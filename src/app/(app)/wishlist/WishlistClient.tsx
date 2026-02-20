@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/Avatar'
-import { Plus, Trash2, Loader2, Gift, Star, Lock, Check, Pencil, X } from 'lucide-react'
+import { Plus, Trash2, Loader2, Gift, Star, Lock, Check, Pencil, X, ExternalLink } from 'lucide-react'
 import type { Wish } from '@/lib/database.types'
 
 type WishWithProfile = Wish & {
@@ -11,6 +11,8 @@ type WishWithProfile = Wish & {
     full_name: string | null
     avatar_url: string | null
   } | null
+} & {
+  product_url?: string | null
 }
 
 interface WishlistClientProps {
@@ -35,13 +37,59 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
   const [editPrice, setEditPrice] = useState('')
   const [editPriority, setEditPriority] = useState(3)
   const [editComment, setEditComment] = useState('')
+  const [editProductUrl, setEditProductUrl] = useState('')
   const [sortFilter, setSortFilter] = useState<'all' | 'mine' | 'partner'>('all')
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [newUrl, setNewUrl] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [newProductUrl, setNewProductUrl] = useState('')
+  const [parsing, setParsing] = useState(false)
   
   const supabase = createClient()
+
+  // Handle marketplace URL parsing
+  const handleProductUrlChange = async (url: string) => {
+    setNewProductUrl(url)
+    
+    // If it looks like a marketplace URL, try to parse it
+    if (url.includes('://') && !url.match(/\.(jpg|jpeg|png|webp|gif)/i)) {
+      setParsing(true)
+      try {
+        const response = await fetch('/api/parse-product', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          
+          // If we got an image, set it as preview
+          if (data.image) {
+            setImagePreview(data.image)
+            setSelectedImage(null) // Clear any uploaded file
+          }
+          
+          // If we got a title, autofill the title field
+          if (data.title && !newTitle) {
+            setNewTitle(data.title)
+          }
+          
+          // If we got a price, autofill the price field
+          if (data.price && !newPrice) {
+            // Extract just the number
+            const priceNum = data.price.replace(/[^0-9]/g, '')
+            if (priceNum) setNewPrice(priceNum)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to parse URL:', error)
+      } finally {
+        setParsing(false)
+      }
+    }
+  }
 
   // Handle image file selection
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,6 +188,7 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
           priority: newPriority,
           comment: newComment.trim() || null,
           image_url: finalImageUrl,
+          product_url: newProductUrl.trim() || null,
           user_id: user.id
         })
         .select('*, profiles:user_id(full_name, avatar_url)')
@@ -156,6 +205,7 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
       setSelectedImage(null)
       setImagePreview(null)
       setNewUrl('')
+      setNewProductUrl('')
       setShowAddForm(false)
     } catch (error) {
       console.error('Error adding wish:', error)
@@ -231,6 +281,7 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
     setEditPrice(wish.price ? wish.price.toString() : '')
     setEditPriority(wish.priority)
     setEditComment(wish.comment || '')
+    setEditProductUrl((wish as any).product_url || '')
   }
 
   const cancelEdit = () => {
@@ -239,6 +290,7 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
     setEditPrice('')
     setEditPriority(3)
     setEditComment('')
+    setEditProductUrl('')
   }
 
   const saveEdit = async (id: string) => {
@@ -253,7 +305,8 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
           title: editTitle.trim(),
           price: editPrice ? parseFloat(editPrice) : null,
           priority: editPriority,
-          comment: editComment.trim() || null
+          comment: editComment.trim() || null,
+          product_url: editProductUrl.trim() || null
         })
         .eq('id', id)
 
@@ -265,7 +318,8 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
           title: editTitle.trim(),
           price: editPrice ? parseFloat(editPrice) : null,
           priority: editPriority,
-          comment: editComment.trim() || null
+          comment: editComment.trim() || null,
+          product_url: editProductUrl.trim() || null
         } : w
       ))
       setEditingId(null)
@@ -273,6 +327,7 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
       setEditPrice('')
       setEditPriority(3)
       setEditComment('')
+      setEditProductUrl('')
     } catch (error) {
       console.error('Error editing wish:', error)
     } finally {
@@ -307,6 +362,100 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
 
   return (
     <div className="pt-12 lg:pt-0">
+      {/* Edit Modal */}
+      {editingId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Редактировать желание</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Название
+                </label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="input w-full"
+                  placeholder="Название"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Цена
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₽</span>
+                  <input
+                    type="number"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    className="input w-full pl-10"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Приоритет
+                </label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => setEditPriority(n)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        editPriority >= n ? 'bg-warning/20' : 'bg-gray-100'
+                      }`}
+                    >
+                      <Star className={`w-5 h-5 ${editPriority >= n ? 'text-warning fill-warning' : 'text-gray-300'}`} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Комментарий
+                </label>
+                <input
+                  type="text"
+                  value={editComment}
+                  onChange={(e) => setEditComment(e.target.value)}
+                  className="input w-full"
+                  placeholder="Комментарий"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ссылка на товар
+                </label>
+                <input
+                  type="url"
+                  value={editProductUrl}
+                  onChange={(e) => setEditProductUrl(e.target.value)}
+                  className="input w-full"
+                  placeholder="https://wildberries.ru/..."
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={cancelEdit}
+                  className="btn-secondary flex-1"
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={() => saveEdit(editingId)}
+                  disabled={actionLoading === editingId || !editTitle.trim()}
+                  className="btn-primary flex-1"
+                >
+                  {actionLoading === editingId ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Сохранить'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <h1 className="text-2xl lg:text-3xl font-bold text-gray-800 mb-1 lg:mb-2">Вишлист</h1>
       <p className="text-gray-500 mb-4 lg:mb-6 text-sm lg:text-base">Идеи подарков друг для друга</p>
 
@@ -482,9 +631,26 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
               type="text"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-                            placeholder="Размер, цвет, ссылка на товар..."
+                            placeholder="Размер, цвет..."
               className="input"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Ссылка на товар
+              {parsing && <span className="ml-2 text-xs text-primary"> (парсинг...)</span>}
+            </label>
+            <input
+              type="url"
+              value={newProductUrl}
+              onChange={(e) => handleProductUrlChange(e.target.value)}
+              placeholder="https://wildberries.ru/... или https://ozon.ru/..."
+              className="input"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Вставьте ссылку - мы попробуем автоматически получить фото и название
+            </p>
           </div>
 
           <div className="flex gap-2">
@@ -512,167 +678,146 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
           <h2 className="text-lg font-semibold text-gray-700 mb-4">
                         Активные желания ({activeWishes.length})
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 lg:gap-4">
             {activeWishes.map(wish => (
               <div
                 key={wish.id}
-                className={`card-hover relative ${wish.reserved ? 'ring-2 ring-info' : ''}`}
+                className={`card-hover group relative overflow-hidden rounded-xl ${wish.reserved ? 'ring-2 ring-info' : ''}`}
               >
-                {/* Image or Emoji */}
-                {wish.image_url?.startsWith('http') ? (
-                  <img 
-                    src={wish.image_url} 
-                    alt={wish.title}
-                    className="w-full h-32 object-cover rounded-lg mb-3"
-                  />
-                ) : (
-                  <div className="text-4xl mb-3">{wish.image_url || '🎁'}</div>
-                )}
-                
-                {/* Content */}
-                {editingId === wish.id ? (
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      className="input text-sm w-full"
-                      placeholder="Название"
+                {/* Image or Emoji - Full Card Background */}
+                <div className="aspect-[2/3] rounded-xl overflow-hidden bg-gray-100 relative">
+                  {wish.image_url?.startsWith('http') ? (
+                    <img 
+                      src={wish.image_url} 
+                      alt={wish.title}
+                      className="w-full h-full object-cover"
                     />
-                    <div className="flex gap-2">
-                      <span className="text-gray-400 text-sm self-center">₽</span>
-                      <input
-                        type="number"
-                        value={editPrice}
-                        onChange={(e) => setEditPrice(e.target.value)}
-                        className="input text-sm flex-1"
-                        placeholder="Цена"
-                      />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-info/10">
+                      <span className="text-6xl">{wish.image_url || '🎁'}</span>
                     </div>
-                    <div className="flex gap-1">
-                      {[1,2,3,4,5].map(n => (
-                        <button
-                          key={n}
-                          onClick={() => setEditPriority(n)}
-                          className={`p-1 ${editPriority >= n ? 'text-yellow-400' : 'text-gray-300'}`}
-                        >
-                          <Star className="w-4 h-4 fill-current" />
-                        </button>
-                      ))}
-                    </div>
-                    <input
-                      type="text"
-                      value={editComment}
-                      onChange={(e) => setEditComment(e.target.value)}
-                      className="input text-sm w-full"
-                      placeholder="Комментарий"
-                    />
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => saveEdit(wish.id)}
-                        disabled={actionLoading === wish.id}
-                        className="btn-primary flex-1 text-sm py-1"
-                      >
-                        Сохранить
-                      </button>
-                      <button
-                        onClick={cancelEdit}
-                        className="btn-secondary flex-1 text-sm py-1"
-                      >
-                        Отмена
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <h3 className="font-medium text-gray-800 mb-1">{wish.title}</h3>
-                    
+                  )}
+                  
+                  {/* Gradient overlay for text readability */}
+                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent" />
+                  
+                  {/* Content on image */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+                    <h3 className="font-semibold text-sm lg:text-base mb-1 line-clamp-2">{wish.title}</h3>
                     {wish.price && (
-                      <p className="text-sm text-gray-500 mb-2">
+                      <p className="text-sm text-white/90">
                         ~{wish.price?.toLocaleString()} ₽
                       </p>
                     )}
-                    
-                    {wish.comment && (
-                      <p className="text-sm text-gray-400 mb-2">{wish.comment}</p>
-                    )}
-                    
                     {/* Priority */}
-                    <div className="mb-3">{renderStars(wish.priority)}</div>
+                    <div className="flex gap-0.5 mt-1">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <Star
+                          key={star}
+                          className={`w-3 h-3 ${
+                            star <= wish.priority ? 'text-warning fill-warning' : 'text-white/40'
+                          }`}
+                        />
+                      ))}
+                    </div>
                   </div>
-                )}
-                
-                {/* Status */}
-                {wish.reserved && (
-                  <div className="flex items-center gap-1 text-sm text-info mb-3">
-                    <Lock className="w-4 h-4" />
-                    Reserved
-                  </div>
-                )}
-                
-                {wish.purchased && (
-                  <div className="flex items-center gap-1 text-sm text-success mb-3">
-                    <Check className="w-4 h-4" />
-                    Подарено
-                  </div>
-                )}
-                
-                {/* Footer */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  <Avatar 
-                    url={wish.profiles?.avatar_url ?? null} 
-                    name={wish.profiles?.full_name ?? null} 
-                    size="sm" 
-                  />
-                  <div className="flex gap-1">
+
+                  {/* Mobile actions - always visible */}
+                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between lg:hidden z-10">
                     <button
-                      onClick={() => toggleReserved(wish.id, wish.reserved)}
+                      onClick={(e) => { e.preventDefault(); toggleReserved(wish.id, wish.reserved || false) }}
                       disabled={actionLoading === wish.id}
-                      className={`p-2 rounded-lg transition-colors ${
-                        wish.reserved ? 'bg-info text-white' : 'bg-gray-100 hover:bg-info/10 text-gray-400'
+                      className={`p-1.5 rounded-full ${
+                        wish.reserved ? 'bg-info text-white' : 'bg-white/90 text-gray-700'
                       }`}
-                      title="Reserve"
                     >
                       {actionLoading === wish.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
+                      ) : wish.reserved ? (
                         <Lock className="w-4 h-4" />
+                      ) : (
+                        <Gift className="w-4 h-4" />
                       )}
                     </button>
+                    <div className="flex items-center gap-1">
+                      {wish.product_url && (
+                        <a
+                          href={wish.product_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-full bg-white/90 text-gray-700"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
+                      <button
+                        onClick={(e) => { e.preventDefault(); startEdit(wish) }}
+                        className="p-1.5 rounded-full bg-white/90 text-gray-700"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.preventDefault(); deleteWish(wish.id) }}
+                        disabled={actionLoading === wish.id}
+                        className="p-1.5 rounded-full bg-danger/80 text-white"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Desktop overlay */}
+                  <div className="hidden lg:flex absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-2">
                     <button
-                      onClick={() => togglePurchased(wish.id, wish.purchased)}
+                      onClick={() => toggleReserved(wish.id, wish.reserved || false)}
                       disabled={actionLoading === wish.id}
-                      className="p-2 rounded-lg bg-gray-100 hover:bg-success/10 text-gray-400 hover:text-success transition-colors"
-                      title="Mark as purchased"
+                      className={`p-2 rounded-full ${
+                        wish.reserved ? 'bg-info text-white' : 'bg-white text-gray-700'
+                      }`}
                     >
-                      <Check className="w-4 h-4" />
+                      {actionLoading === wish.id ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : wish.reserved ? (
+                        <Lock className="w-5 h-5" />
+                      ) : (
+                        <Gift className="w-5 h-5" />
+                      )}
+                    </button>
+                    {wish.product_url && (
+                      <a
+                        href={wish.product_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 rounded-full bg-white text-gray-700"
+                        title="Открыть"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ExternalLink className="w-5 h-5" />
+                      </a>
+                    )}
+                    <button
+                      onClick={() => startEdit(wish)}
+                      className="p-2 rounded-full bg-white text-gray-700"
+                      title="Редактировать"
+                    >
+                      <Pencil className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => deleteWish(wish.id)}
                       disabled={actionLoading === wish.id}
-                      className="p-2 rounded-lg bg-gray-100 hover:bg-danger/10 text-gray-400 hover:text-danger transition-colors"
-                      title="Delete"
+                      className="p-2 rounded-full bg-danger text-white"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-5 h-5" />
                     </button>
-                    {editingId === wish.id ? (
-                      <button
-                        onClick={cancelEdit}
-                        className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-400"
-                        title="Cancel"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => startEdit(wish)}
-                        className="p-2 rounded-lg bg-gray-100 hover:bg-primary/10 text-gray-400 hover:text-primary transition-colors"
-                        title="Edit"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                    )}
                   </div>
+                  
+                  {/* Reserved badge */}
+                  {wish.reserved && (
+                    <div className="absolute top-2 right-2 bg-info text-white text-xs px-2 py-1 rounded-full">
+                      Зарезервировано
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
