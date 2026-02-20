@@ -59,7 +59,6 @@ export async function POST(request: NextRequest) {
               
               // Get the main image
               if (product.photo) {
-                const photoId = product.photo.split('/').pop()?.split('.')[0]
                 const imagePath = Math.floor(parseInt(productId) / 10000) * 10000
                 image = `https://images.wbstatic.net/c246x328/new/${imagePath}/${productId}-1.jpg`
               }
@@ -115,7 +114,7 @@ export async function POST(request: NextRequest) {
       if (ymMatch) {
         const productId = ymMatch[1]
         try {
-          const apiResponse = await fetch(`https://market.yandex.com/api/product-offers/v1/filters//${productId}/info`, {
+          await fetch(`https://market.yandex.com/api/product-offers/v1/filters//${productId}/info`, {
             headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             },

@@ -28,7 +28,7 @@ export default function TelegramWebAppProvider({
           if (window.Telegram.WebApp.setBackgroundColor) {
             window.Telegram.WebApp.setBackgroundColor(bgColor)
           }
-        } catch (e) {
+        } catch {
           // Ignore color setting errors
           console.log('Telegram color setting not supported')
         }

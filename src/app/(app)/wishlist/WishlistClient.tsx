@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import Avatar from '@/components/Avatar'
 import { Plus, Trash2, Loader2, Gift, Star, Lock, Check, Pencil, X, ExternalLink } from 'lucide-react'
 import type { Wish } from '@/lib/database.types'
 
@@ -42,6 +41,7 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [newUrl, setNewUrl] = useState('')
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [uploadingImage, setUploadingImage] = useState(false)
   const [newProductUrl, setNewProductUrl] = useState('')
   const [parsing, setParsing] = useState(false)
@@ -100,33 +100,6 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
       const reader = new FileReader()
       reader.onload = (e) => setImagePreview(e.target?.result as string)
       reader.readAsDataURL(file)
-    }
-  }
-
-  // Parse marketplace URL to get image
-  const parseMarketplaceUrl = async (url: string) => {
-    if (!url.trim()) return null
-    
-    try {
-      // Check if it's a direct image URL
-      if (url.match(/\.(jpg|jpeg|png|webp|gif)/i)) {
-        return url
-      }
-      
-      // For marketplace URLs, we'll try to extract og:image
-      // Since we can't do server-side scraping, we'll use a simple approach:
-      // If it's a known marketplace, try to construct image URL or use placeholder
-      
-      // For now, just return the URL as-is if it's an image, otherwise return null
-      // The user can manually add image URL in the comment
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        // Return URL as a hint - in production you'd use a server function to scrape
-        return url
-      }
-      return null
-    } catch (error) {
-      console.error('Error parsing URL:', error)
-      return null
     }
   }
 
@@ -235,27 +208,6 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
     }
   }
 
-  const togglePurchased = async (id: string, purchased: boolean) => {
-    setActionLoading(id)
-    
-    try {
-      const { error } = await supabase
-        .from('wishes')
-        .update({ purchased: !purchased })
-        .eq('id', id)
-
-      if (error) throw error
-
-      setWishes(wishes.map(w => 
-        w.id === id ? { ...w, purchased: !purchased } : w
-      ))
-    } catch (error) {
-      console.error('Error updating wish:', error)
-    } finally {
-      setActionLoading(null)
-    }
-  }
-
   const deleteWish = async (id: string) => {
     setActionLoading(id)
     
@@ -281,7 +233,7 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
     setEditPrice(wish.price ? wish.price.toString() : '')
     setEditPriority(wish.priority)
     setEditComment(wish.comment || '')
-    setEditProductUrl((wish as any).product_url || '')
+    setEditProductUrl(wish.product_url || '')
   }
 
   const cancelEdit = () => {
@@ -344,21 +296,6 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
 
   const activeWishes = filteredWishes.filter(w => !w.purchased)
   const purchasedWishes = filteredWishes.filter(w => w.purchased)
-
-  const renderStars = (priority: number) => {
-    return (
-      <div className="flex gap-0.5">
-        {[1, 2, 3, 4, 5].map(star => (
-          <Star
-            key={star}
-            className={`w-4 h-4 ${
-              star <= priority ? 'text-warning fill-warning' : 'text-gray-300'
-            }`}
-          />
-        ))}
-      </div>
-    )
-  }
 
   return (
     <div className="pt-12 lg:pt-0">
