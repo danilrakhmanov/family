@@ -225,8 +225,32 @@ export default function HomePage() {
                     onChange={(e) => setAgreedToTerms(e.target.checked)}
                     className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
-                  <label htmlFor="terms" className="text-sm text-gray-600">
-                    Я согласен с условиями использования и политикой конфиденциальности
+                  <label htmlFor="terms" className="text-sm text-gray-600 flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      id="terms"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <span>
+                      Я согласен с{' '}
+                      <button
+                        type="button"
+                        onClick={() => setShowTerms(true)}
+                        className="text-primary hover:underline"
+                      >
+                        условиями использования
+                      </button>
+                      {' '}и{' '}
+                      <button
+                        type="button"
+                        onClick={() => setShowTerms(true)}
+                        className="text-primary hover:underline"
+                      >
+                        политикой конфиденциальности
+                      </button>
+                    </span>
                   </label>
                 </div>
               )}
