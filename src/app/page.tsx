@@ -226,14 +226,7 @@ export default function HomePage() {
                     className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
                   <label htmlFor="terms" className="text-sm text-gray-600">
-                    Я согласен с{' '}
-                    <button
-                      type="button"
-                      onClick={() => setShowTerms(true)}
-                      className="text-primary hover:underline"
-                    >
-                      условиями использования
-                    </button>
+                    Я согласен с условиями использования и политикой конфиденциальности
                   </label>
                 </div>
               )}
@@ -278,23 +271,26 @@ export default function HomePage() {
       {showTerms && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Условия использования</h2>
+            <h2 className="text-xl font-bold mb-4">Пользовательское соглашение и Политика конфиденциальности</h2>
             <div className="space-y-4 text-sm text-gray-600 max-h-96 overflow-y-auto">
               <section>
-                <h3 className="font-semibold text-gray-900 mb-2">1. Общие положения</h3>
-                <p>Используя приложение «Наш Дом», вы соглашаетесь с условиями настоящего соглашения.</p>
+                <h3 className="font-semibold text-gray-900 mb-2">Политика конфиденциальности</h3>
+                <p className="mb-2">Мы собираем минимально необходимые данные:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Данные профиля из Telegram</li>
+                  <li>Данные, которые вы добавляете в приложение</li>
+                  <li>Загруженные изображения</li>
+                </ul>
+                <p className="mt-2">Все данные хранятся на защищённых серверах Supabase.</p>
               </section>
+              <hr className="my-4" />
               <section>
-                <h3 className="font-semibold text-gray-900 mb-2">2. Описание услуги</h3>
-                <p>«Наш Дом» — это семейное приложение для совместного планирования.</p>
-              </section>
-              <section>
-                <h3 className="font-semibold text-gray-900 mb-2">3. Конфиденциальность</h3>
-                <p>Мы заботимся о вашей приватности. Все данные хранятся защищённо.</p>
-              </section>
-              <section>
-                <h3 className="font-semibold text-gray-900 mb-2">4. Ответственность</h3>
-                <p>Приложение предоставляется «как есть».</p>
+                <h3 className="font-semibold text-gray-900 mb-2">Пользовательское соглашение</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Приложение для личного семейного использования</li>
+                  <li>Не добавляйте контент, нарушающий законы</li>
+                  <li>Приложение предоставляется «как есть»</li>
+                </ul>
               </section>
             </div>
             <div className="mt-6 flex gap-3">
