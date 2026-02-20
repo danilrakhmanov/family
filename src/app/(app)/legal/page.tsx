@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Shield, FileText, Check } from 'lucide-react'
+import { ArrowLeft, Shield, FileText } from 'lucide-react'
 
 export default function LegalPage() {
   const router = useRouter()
