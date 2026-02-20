@@ -20,12 +20,14 @@ interface CalendarClientProps {
 }
 
 const colorOptions = [
-  { value: '#b8a9a1', label: 'Beige' },
-  { value: '#7cb082', label: 'Green' },
-  { value: '#e6b87d', label: 'Orange' },
-  { value: '#d48a8a', label: 'Red' },
-  { value: '#7ba3c4', label: 'Blue' },
-  { value: '#c4a77d', label: 'Gold' },
+  { value: '#f472b6', label: 'Розовый' },
+  { value: '#60a5fa', label: 'Синий' },
+  { value: '#34d399', label: 'Зелёный' },
+  { value: '#fbbf24', label: 'Жёлтый' },
+  { value: '#fb923c', label: 'Оранжевый' },
+  { value: '#a78bfa', label: 'Фиолетовый' },
+  { value: '#f87171', label: 'Красный' },
+  { value: '#22d3ee', label: 'Голубой' },
 ]
 
 export default function CalendarClient({ initialEvents }: CalendarClientProps) {
@@ -45,6 +47,9 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
   const [newPlanTime, setNewPlanTime] = useState('')
   const [newPlanTitle, setNewPlanTitle] = useState('')
   const [addingPlan, setAddingPlan] = useState<string | null>(null)
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null)
+  const [editPlanTime, setEditPlanTime] = useState('')
+  const [editPlanTitle, setEditPlanTitle] = useState('')
   
   const supabase = createClient()
 
@@ -225,6 +230,46 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
     }
   }
 
+  const updatePlanItem = async (eventId: string, planItemId: string) => {
+    if (!editPlanTitle.trim() || !editPlanTime) return
+    
+    const event = events.find(e => e.id === eventId)
+    if (!event) return
+    
+    const currentPlan = (event as any).plan || []
+    const newPlan = currentPlan.map((item: PlanItem) => 
+      item.id === planItemId 
+        ? { ...item, time: editPlanTime, title: editPlanTitle.trim() }
+        : item
+    )
+    
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({ plan: newPlan })
+        .eq('id', eventId)
+
+      if (error) throw error
+
+      setEvents(events.map(e => 
+        e.id === eventId 
+          ? { ...e, plan: newPlan }
+          : e
+      ))
+      setEditingPlanId(null)
+      setEditPlanTime('')
+      setEditPlanTitle('')
+    } catch (error) {
+      console.error('Error updating plan item:', error)
+    }
+  }
+
+  const startEditPlan = (item: PlanItem) => {
+    setEditingPlanId(item.id)
+    setEditPlanTime(item.time)
+    setEditPlanTitle(item.title)
+  }
+
   // Custom tile content to show event dots
   const tileContent = ({ date, view }: { date: Date; view: string }) => {
     if (view === 'month') {
@@ -369,15 +414,20 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                             onChange={(e) => setEditTime(e.target.value)}
                             className="input flex-1"
                           />
-                          <select
-                            value={editColor}
-                            onChange={(e) => setEditColor(e.target.value)}
-                            className="input flex-1"
-                          >
+                          <div className="flex gap-1">
                             {colorOptions.map(c => (
-                              <option key={c.value} value={c.value}>{c.label}</option>
+                              <button
+                                key={c.value}
+                                type="button"
+                                onClick={() => setEditColor(c.value)}
+                                className={`w-6 h-6 rounded-full transition-transform ${
+                                  editColor === c.value ? 'scale-110 ring-2 ring-offset-1 ring-gray-400' : ''
+                                }`}
+                                style={{ backgroundColor: c.value }}
+                                title={c.label}
+                              />
                             ))}
-                          </select>
+                          </div>
                         </div>
                       </div>
                       <div className="flex gap-1">
@@ -445,18 +495,62 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                       {eventPlan.length > 0 ? (
                         eventPlan
                           .sort((a: PlanItem, b: PlanItem) => a.time.localeCompare(b.time))
-                          .map((item: PlanItem) => (
+                          .map((item: PlanItem) => {
+                            const isEditingPlan = editingPlanId === item.id
+                            return (
                             <div key={item.id} className="flex items-center gap-2 text-sm bg-gray-50 p-2 rounded">
-                              <span className="font-medium text-primary">{item.time}</span>
-                              <span className="flex-1 text-gray-700">{item.title}</span>
-                              <button
-                                onClick={() => removePlanItem(event.id, item.id)}
-                                className="p-1 text-gray-400 hover:text-danger"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
+                              {isEditingPlan ? (
+                                <>
+                                  <input
+                                    type="time"
+                                    value={editPlanTime}
+                                    onChange={(e) => setEditPlanTime(e.target.value)}
+                                    className="input text-sm w-24"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={editPlanTitle}
+                                    onChange={(e) => setEditPlanTitle(e.target.value)}
+                                    className="input text-sm flex-1"
+                                  />
+                                  <button
+                                    onClick={() => updatePlanItem(event.id, item.id)}
+                                    disabled={!editPlanTitle.trim() || !editPlanTime}
+                                    className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                  >
+                                    <Save className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingPlanId(null)
+                                      setEditPlanTime('')
+                                      setEditPlanTitle('')
+                                    }}
+                                    className="p-1 text-gray-400 hover:bg-gray-100 rounded"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="font-medium text-primary w-16">{item.time}</span>
+                                  <span className="flex-1 text-gray-700">{item.title}</span>
+                                  <button
+                                    onClick={() => startEditPlan(item)}
+                                    className="p-1 text-gray-400 hover:text-primary"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => removePlanItem(event.id, item.id)}
+                                    className="p-1 text-gray-400 hover:text-danger"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </>
+                              )}
                             </div>
-                          ))
+                          )})
                       ) : (
                         <p className="text-sm text-gray-400">Нет пунктов плана</p>
                       )}
