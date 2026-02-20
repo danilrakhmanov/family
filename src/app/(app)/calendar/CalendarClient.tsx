@@ -6,7 +6,7 @@ import Avatar from '@/components/Avatar'
 import { Plus, Trash2, Loader2, Calendar as CalendarIcon, Clock, Pencil, Save, X } from 'lucide-react'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
-import type { Event } from '@/lib/database.types'
+import type { Event, PlanItem } from '@/lib/database.types'
 
 type EventWithProfile = Event & {
   profiles: {
@@ -41,6 +41,10 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
   const [newEventColor, setNewEventColor] = useState('#b8a9a1')
   const [addingEvent, setAddingEvent] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null)
+  const [newPlanTime, setNewPlanTime] = useState('')
+  const [newPlanTitle, setNewPlanTitle] = useState('')
+  const [addingPlan, setAddingPlan] = useState<string | null>(null)
   
   const supabase = createClient()
 
@@ -160,6 +164,67 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
     }
   }
 
+  const addPlanItem = async (eventId: string) => {
+    if (!newPlanTitle.trim() || !newPlanTime) return
+    
+    const event = events.find(e => e.id === eventId)
+    if (!event) return
+    
+    const currentPlan = (event as any).plan || []
+    const newItem: PlanItem = {
+      id: Date.now().toString(),
+      time: newPlanTime,
+      title: newPlanTitle.trim()
+    }
+    
+    const newPlan = [...currentPlan, newItem]
+    
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({ plan: newPlan })
+        .eq('id', eventId)
+
+      if (error) throw error
+
+      setEvents(events.map(e => 
+        e.id === eventId 
+          ? { ...e, plan: newPlan }
+          : e
+      ))
+      setNewPlanTime('')
+      setNewPlanTitle('')
+      setAddingPlan(null)
+    } catch (error) {
+      console.error('Error adding plan item:', error)
+    }
+  }
+
+  const removePlanItem = async (eventId: string, planItemId: string) => {
+    const event = events.find(e => e.id === eventId)
+    if (!event) return
+    
+    const currentPlan = (event as any).plan || []
+    const newPlan = currentPlan.filter((item: PlanItem) => item.id !== planItemId)
+    
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({ plan: newPlan })
+        .eq('id', eventId)
+
+      if (error) throw error
+
+      setEvents(events.map(e => 
+        e.id === eventId 
+          ? { ...e, plan: newPlan }
+          : e
+      ))
+    } catch (error) {
+      console.error('Error removing plan item:', error)
+    }
+  }
+
   // Custom tile content to show event dots
   const tileContent = ({ date, view }: { date: Date; view: string }) => {
     if (view === 'month') {
@@ -276,13 +341,18 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
           {/* Events List */}
           <div className="space-y-2">
             {selectedDateEvents.length > 0 ? (
-              selectedDateEvents.map(event => (
-                <div
-                  key={event.id}
-                  className="card flex items-center gap-4 group"
-                  style={{ borderLeftWidth: 4, borderLeftColor: event.color }}
-                >
-                  {editingId === event.id ? (
+              selectedDateEvents.map(event => {
+                const eventPlan = (event as any).plan || []
+                const isExpanded = expandedEventId === event.id
+                const isAddingPlan = addingPlan === event.id
+                
+                return (
+                <div key={event.id}>
+                  <div
+                    className="card flex items-center gap-4 group"
+                    style={{ borderLeftWidth: 4, borderLeftColor: event.color }}
+                  >
+                    {editingId === event.id ? (
                     <>
                       <div className="flex-1 space-y-2">
                         <input
@@ -337,6 +407,12 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                           </p>
                         )}
                       </div>
+                      <button
+                        onClick={() => setExpandedEventId(isExpanded ? null : event.id)}
+                        className="p-2 text-gray-400 hover:text-primary text-xs"
+                      >
+                        {isExpanded ? 'Свернуть' : 'План'}
+                      </button>
                       <Avatar 
                         url={event.profiles?.avatar_url ?? null} 
                         name={event.profiles?.full_name ?? null} 
@@ -361,8 +437,75 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                       </button>
                     </>
                   )}
+                  </div>
+                  
+                  {/* Plan items section */}
+                  {isExpanded && (
+                    <div className="mt-2 ml-4 pl-4 border-l-2 border-gray-200 space-y-2">
+                      {eventPlan.length > 0 ? (
+                        eventPlan
+                          .sort((a: PlanItem, b: PlanItem) => a.time.localeCompare(b.time))
+                          .map((item: PlanItem) => (
+                            <div key={item.id} className="flex items-center gap-2 text-sm bg-gray-50 p-2 rounded">
+                              <span className="font-medium text-primary">{item.time}</span>
+                              <span className="flex-1 text-gray-700">{item.title}</span>
+                              <button
+                                onClick={() => removePlanItem(event.id, item.id)}
+                                className="p-1 text-gray-400 hover:text-danger"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))
+                      ) : (
+                        <p className="text-sm text-gray-400">Нет пунктов плана</p>
+                      )}
+                      
+                      {isAddingPlan ? (
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="time"
+                            value={newPlanTime}
+                            onChange={(e) => setNewPlanTime(e.target.value)}
+                            className="input text-sm w-24"
+                          />
+                          <input
+                            type="text"
+                            value={newPlanTitle}
+                            onChange={(e) => setNewPlanTitle(e.target.value)}
+                            placeholder="Описание"
+                            className="input text-sm flex-1"
+                          />
+                          <button
+                            onClick={() => addPlanItem(event.id)}
+                            disabled={!newPlanTitle.trim() || !newPlanTime}
+                            className="p-1 text-green-600 hover:bg-green-50 rounded"
+                          >
+                            <Save className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setAddingPlan(null)
+                              setNewPlanTime('')
+                              setNewPlanTitle('')
+                            }}
+                            className="p-1 text-gray-400 hover:bg-gray-100 rounded"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setAddingPlan(event.id)}
+                          className="text-sm text-primary hover:underline"
+                        >
+                          + Добавить пункт
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
-              ))
+              )})
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <CalendarIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />

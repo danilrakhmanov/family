@@ -6,6 +6,12 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+export type PlanItem = {
+  id: string
+  time: string
+  title: string
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -189,6 +195,7 @@ export interface Database {
           color: string
           user_id: string
           created_at: string
+          plan: PlanItem[]
         }
         Insert: {
           id?: string
@@ -198,6 +205,7 @@ export interface Database {
           color?: string
           user_id: string
           created_at?: string
+          plan?: PlanItem[]
         }
         Update: {
           id?: string
@@ -207,6 +215,7 @@ export interface Database {
           color?: string
           user_id?: string
           created_at?: string
+          plan?: PlanItem[]
         }
       }
       wishes: {
