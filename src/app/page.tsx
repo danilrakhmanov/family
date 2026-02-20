@@ -14,6 +14,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [showTerms, setShowTerms] = useState(false)
   
   const router = useRouter()
   const supabase = createClient()
@@ -43,6 +45,13 @@ export default function HomePage() {
     setLoading(true)
     setError(null)
     setMessage(null)
+
+    // Check terms agreement for registration
+    if (!isLogin && !agreedToTerms) {
+      setError('Для регистрации необходимо согласиться с условиями использования')
+      setLoading(false)
+      return
+    }
 
     try {
       if (isLogin) {
@@ -207,6 +216,28 @@ export default function HomePage() {
                 </div>
               )}
 
+              {!isLogin && (
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="terms"
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <label htmlFor="terms" className="text-sm text-gray-600">
+                    Я согласен с{' '}
+                    <button
+                      type="button"
+                      onClick={() => setShowTerms(true)}
+                      className="text-primary hover:underline"
+                    >
+                      условиями использования
+                    </button>
+                  </label>
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={loading}
@@ -229,6 +260,7 @@ export default function HomePage() {
                   setIsLogin(!isLogin)
                   setError(null)
                   setMessage(null)
+                  setAgreedToTerms(false)
                 }}
                 className="text-gray-500 hover:text-primary transition-colors"
               >
@@ -241,6 +273,47 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* Terms Modal */}
+      {showTerms && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Условия использования</h2>
+            <div className="space-y-4 text-sm text-gray-600 max-h-96 overflow-y-auto">
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">1. Общие положения</h3>
+                <p>Используя приложение «Наш Дом», вы соглашаетесь с условиями настоящего соглашения.</p>
+              </section>
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">2. Описание услуги</h3>
+                <p>«Наш Дом» — это семейное приложение для совместного планирования.</p>
+              </section>
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">3. Конфиденциальность</h3>
+                <p>Мы заботимся о вашей приватности. Все данные хранятся защищённо.</p>
+              </section>
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">4. Ответственность</h3>
+                <p>Приложение предоставляется «как есть».</p>
+              </section>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setShowTerms(false)}
+                className="btn-secondary flex-1"
+              >
+                Закрыть
+              </button>
+              <button
+                onClick={() => { setAgreedToTerms(true); setShowTerms(false) }}
+                className="btn-primary flex-1"
+              >
+                Принять
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
