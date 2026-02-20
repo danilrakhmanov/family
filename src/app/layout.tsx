@@ -12,6 +12,11 @@ const geistSans = localFont({
 export const metadata: Metadata = {
   title: "Наш Дом - Приложение для пар",
   description: "Уютное пространство для двоих",
+  openGraph: {
+    title: "Наш Дом - Приложение для пар",
+    description: "Уютное пространство для двоих",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
