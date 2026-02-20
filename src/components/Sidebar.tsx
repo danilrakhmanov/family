@@ -15,7 +15,8 @@ import {
   LogOut,
   User,
   ChefHat,
-  Heart
+  Heart,
+  Shield
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Avatar from './Avatar'
@@ -35,6 +36,7 @@ const navItems = [
   { href: '/calendar', label: 'Календарь', icon: Calendar, emoji: 'calendar' },
   { href: '/wishlist', label: 'Вишлист', icon: Gift, emoji: 'gift' },
   { href: '/memories', label: 'Воспоминания', icon: BookHeart, emoji: 'book' },
+  { href: '/legal', label: 'Правовая информация', icon: Shield, emoji: 'shield' },
   { href: 'https://recipes-love.vercel.app/', label: 'Рецепты', icon: ChefHat, emoji: 'chef', external: true },
 ]
 
