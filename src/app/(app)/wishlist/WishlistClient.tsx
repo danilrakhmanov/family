@@ -37,6 +37,8 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
   const [editPriority, setEditPriority] = useState(3)
   const [editComment, setEditComment] = useState('')
   const [editProductUrl, setEditProductUrl] = useState('')
+  const [selectedEditImage, setSelectedEditImage] = useState<File | null>(null)
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null)
   const [sortFilter, setSortFilter] = useState<'all' | 'mine' | 'partner'>('all')
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -99,6 +101,18 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
       // Create preview
       const reader = new FileReader()
       reader.onload = (e) => setImagePreview(e.target?.result as string)
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // Handle edit image file selection
+  const handleEditImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedEditImage(file)
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (e) => setEditImagePreview(e.target?.result as string)
       reader.readAsDataURL(file)
     }
   }
@@ -234,6 +248,14 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
     setEditPriority(wish.priority)
     setEditComment(wish.comment || '')
     setEditProductUrl(wish.product_url || '')
+    // Load existing image - check if it's not just an emoji (simple check)
+    const isEmoji = wish.image_url && wish.image_url.length <= 2 && !wish.image_url.includes('http')
+    if (wish.image_url && !isEmoji) {
+      setEditImagePreview(wish.image_url)
+    } else {
+      setEditImagePreview(null)
+    }
+    setSelectedEditImage(null)
   }
 
   const cancelEdit = () => {
@@ -243,6 +265,8 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
     setEditPriority(3)
     setEditComment('')
     setEditProductUrl('')
+    setSelectedEditImage(null)
+    setEditImagePreview(null)
   }
 
   const saveEdit = async (id: string) => {
@@ -251,6 +275,33 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
     setActionLoading(id)
     
     try {
+      let finalImageUrl: string | null = null
+      
+      // Handle image upload
+      if (selectedEditImage) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const fileName = `wish-${user.id}-${Date.now()}.jpg`
+          
+          const { error: uploadError } = await supabase.storage
+            .from('memories')
+            .upload(fileName, selectedEditImage, {
+              contentType: 'image/jpeg',
+              upsert: false
+            })
+          
+          if (!uploadError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('memories')
+              .getPublicUrl(fileName)
+            finalImageUrl = publicUrl
+          }
+        }
+      } else if (editImagePreview) {
+        // Keep existing image if no new image was selected
+        finalImageUrl = editImagePreview
+      }
+
       const { error } = await supabase
         .from('wishes')
         .update({ 
@@ -258,7 +309,8 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
           price: editPrice ? parseFloat(editPrice) : null,
           priority: editPriority,
           comment: editComment.trim() || null,
-          product_url: editProductUrl.trim() || null
+          product_url: editProductUrl.trim() || null,
+          image_url: finalImageUrl
         })
         .eq('id', id)
 
@@ -271,7 +323,8 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
           price: editPrice ? parseFloat(editPrice) : null,
           priority: editPriority,
           comment: editComment.trim() || null,
-          product_url: editProductUrl.trim() || null
+          product_url: editProductUrl.trim() || null,
+          image_url: finalImageUrl || w.image_url
         } : w
       ))
       setEditingId(null)
@@ -280,6 +333,8 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
       setEditPriority(3)
       setEditComment('')
       setEditProductUrl('')
+      setSelectedEditImage(null)
+      setEditImagePreview(null)
     } catch (error) {
       console.error('Error editing wish:', error)
     } finally {
@@ -305,6 +360,39 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
           <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Редактировать желание</h2>
             <div className="space-y-4">
+              {/* Image upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Картинка
+                </label>
+                {editImagePreview ? (
+                  <div className="relative inline-block">
+                    <img 
+                      src={editImagePreview} 
+                      alt="Preview" 
+                      className="w-20 h-20 object-cover rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedEditImage(null); setEditImagePreview(null) }}
+                      className="absolute -top-2 -right-2 bg-danger text-white rounded-full p-1"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="cursor-pointer flex flex-col items-center justify-center w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary transition-colors">
+                    <Plus className="w-6 h-6 text-gray-400" />
+                    <span className="text-xs text-gray-400 mt-1">Фото</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleEditImageSelect}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Название
@@ -638,6 +726,17 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
                   {/* Gradient overlay for text readability */}
                   <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent" />
                   
+                  {/* Avatar badge - who created this wish */}
+                  {wish.profiles?.avatar_url && (
+                    <div className="absolute top-2 left-2 w-8 h-8 rounded-full overflow-hidden ring-2 ring-white/50">
+                      <img 
+                        src={wish.profiles.avatar_url} 
+                        alt={wish.profiles.full_name || 'User'}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  
                   {/* Content on image */}
                   <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
                     <h3 className="font-semibold text-sm lg:text-base mb-1 line-clamp-2">{wish.title}</h3>
@@ -774,6 +873,16 @@ export default function WishlistClient({ initialWishes, currentUserId }: Wishlis
                 key={wish.id}
                 className="card opacity-60 relative group"
               >
+                {/* Avatar badge - who created this wish */}
+                {wish.profiles?.avatar_url && (
+                  <div className="absolute top-3 left-3 w-6 h-6 rounded-full overflow-hidden ring-2 ring-white">
+                    <img 
+                      src={wish.profiles.avatar_url} 
+                      alt={wish.profiles.full_name || 'User'}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
                 {/* Image or Emoji */}
                 {wish.image_url?.startsWith('http') ? (
                   <img 
