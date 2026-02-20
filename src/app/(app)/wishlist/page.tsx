@@ -4,6 +4,9 @@ import WishlistClient from './WishlistClient'
 export default async function WishlistPage() {
   const supabase = await createClient()
   
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser()
+  
   // Get all wishes with profiles
   const { data: wishes, error } = await supabase
     .from('wishes')
@@ -13,5 +16,5 @@ export default async function WishlistPage() {
 
   console.log('Wishlist page loaded:', { wishesCount: wishes?.length, error })
 
-  return <WishlistClient initialWishes={wishes || []} />
+  return <WishlistClient initialWishes={wishes || []} currentUserId={user?.id || null} />
 }
