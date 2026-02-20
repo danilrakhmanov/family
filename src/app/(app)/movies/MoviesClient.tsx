@@ -385,17 +385,26 @@ export default function MoviesClient({ initialMovies }: MoviesClientProps) {
                       <Eye className="w-4 h-4" />
                     )}
                   </button>
-                  {movie.kinopoisk_id && (
-                    <a
-                      href={`https://www.kinopoisk.ru/film/${movie.kinopoisk_id}/`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-1.5 rounded-full bg-white/90 text-gray-700"
-                      onClick={(e) => e.stopPropagation()}
+                  <div className="flex items-center gap-1">
+                    {movie.kinopoisk_id && (
+                      <a
+                        href={`https://www.kinopoisk.ru/film/${movie.kinopoisk_id}/`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 rounded-full bg-white/90 text-gray-700"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                    <button
+                      onClick={(e) => { e.preventDefault(); deleteMovie(movie.id) }}
+                      disabled={actionLoading === movie.id}
+                      className="p-1.5 rounded-full bg-danger/80 text-white"
                     >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  )}
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Desktop overlay */}
