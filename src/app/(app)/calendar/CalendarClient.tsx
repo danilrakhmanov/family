@@ -13,6 +13,7 @@ type EventWithProfile = Event & {
     full_name: string | null
     avatar_url: string | null
   } | null
+  plan?: PlanItem[]
 }
 
 interface CalendarClientProps {
@@ -175,7 +176,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
     const event = events.find(e => e.id === eventId)
     if (!event) return
     
-    const currentPlan = (event as any).plan || []
+    const currentPlan = event.plan || []
     const newItem: PlanItem = {
       id: Date.now().toString(),
       time: newPlanTime,
@@ -209,7 +210,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
     const event = events.find(e => e.id === eventId)
     if (!event) return
     
-    const currentPlan = (event as any).plan || []
+    const currentPlan = event.plan || []
     const newPlan = currentPlan.filter((item: PlanItem) => item.id !== planItemId)
     
     try {
@@ -236,7 +237,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
     const event = events.find(e => e.id === eventId)
     if (!event) return
     
-    const currentPlan = (event as any).plan || []
+    const currentPlan = event.plan || []
     const newPlan = currentPlan.map((item: PlanItem) => 
       item.id === planItemId 
         ? { ...item, time: editPlanTime, title: editPlanTitle.trim() }
@@ -387,7 +388,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
           <div className="space-y-2">
             {selectedDateEvents.length > 0 ? (
               selectedDateEvents.map(event => {
-                const eventPlan = (event as any).plan || []
+                const eventPlan = event.plan || []
                 const isExpanded = expandedEventId === event.id
                 const isAddingPlan = addingPlan === event.id
                 
