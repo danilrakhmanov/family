@@ -8,7 +8,7 @@ export default async function ShoppingPage() {
   const { data: { user: currentUser } } = await supabase.auth.getUser()
   
   // Get all shopping items with profiles
-  const { data: items, error } = await supabase
+  const { data: items } = await supabase
     .from('shopping_items')
     .select('*, profiles:user_id(full_name, avatar_url)')
     .order('created_at', { ascending: false })
