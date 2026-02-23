@@ -2,42 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { CheckSquare, ShoppingCart, Film, Wallet, Calendar, Gift, BookHeart, TrendingUp, ChefHat, Heart } from 'lucide-react'
 import Link from 'next/link'
 import Avatar from '@/components/Avatar'
-
-function calculateDuration(startDate: string | null) {
-  if (!startDate) return null
-  // Используем явное время 00:00:00 чтобы избежать проблем с часовыми поясами
-  const start = new Date(startDate + 'T00:00:00')
-  const now = new Date()
-  
-  // Calculate years, months, and remaining days
-  let years = now.getFullYear() - start.getFullYear()
-  let months = now.getMonth() - start.getMonth()
-  let days = now.getDate() - start.getDate()
-  
-  // Adjust for negative days
-  if (days < 0) {
-    months--
-    const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0)
-    days += prevMonth.getDate()
-  }
-  
-  // Adjust for negative months
-  if (months < 0) {
-    years--
-    months += 12
-  }
-  
-  return { years, months, days }
-}
-
-function formatDuration(duration: { years: number; months: number; days: number }) {
-  const { years, months, days } = duration
-  const parts = []
-  if (years > 0) parts.push(`${years} ${years === 1 ? 'год' : years < 5 ? 'года' : 'лет'}`)
-  if (months > 0) parts.push(`${months} ${months === 1 ? 'месяц' : months < 5 ? 'месяца' : 'месяцев'}`)
-  if (days > 0) parts.push(`${days} ${days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}`)
-  return parts.join(' ') || 'меньше дня'
-}
+import { calculateDuration, formatDuration } from '@/lib/dateUtils'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
