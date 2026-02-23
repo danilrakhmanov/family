@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Avatar from '@/components/Avatar'
 import { Camera, Loader2, Save, Mail, Check, X, Heart, Calendar } from 'lucide-react'
 import type { Profile } from '@/lib/database.types'
+import { calculateDuration, formatDuration } from '@/lib/dateUtils'
 
 interface Partnership {
   id: string
@@ -419,32 +420,7 @@ export default function ProfileClient({ profile, partnership: partnershipFromSer
                   <p className="text-xs text-purple-500 uppercase tracking-wider font-semibold mb-1">Вы вместе</p>
                   <p className="text-2xl font-bold text-purple-700 flex items-center justify-center gap-2">
                     <Heart className="w-6 h-6 text-pink-500 fill-pink-500 animate-pulse" />
-                    {(() => {
-                      // Используем явное время 00:00:00 чтобы избежать проблем с часовыми поясами
-                      const start = new Date(startedAt + 'T00:00:00')
-                      const now = new Date()
-                      
-                      let years = now.getFullYear() - start.getFullYear()
-                      let months = now.getMonth() - start.getMonth()
-                      let days = now.getDate() - start.getDate()
-                      
-                      if (days < 0) {
-                        months--
-                        const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0)
-                        days += prevMonth.getDate()
-                      }
-                      
-                      if (months < 0) {
-                        years--
-                        months += 12
-                      }
-                      
-                      const parts = []
-                      if (years > 0) parts.push(`${years} ${years === 1 ? 'год' : years < 5 ? 'года' : 'лет'}`)
-                      if (months > 0) parts.push(`${months} ${months === 1 ? 'месяц' : months < 5 ? 'месяца' : 'месяцев'}`)
-                      if (days > 0) parts.push(`${days} ${days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}`)
-                      return parts.join(' ') || 'меньше дня'
-                    })()}
+                    {formatDuration(calculateDuration(startedAt))}
                   </p>
                 </div>
               )}
