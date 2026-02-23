@@ -32,11 +32,11 @@ export default function ProfileClient({ profile, partnership: partnershipFromSer
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   
   // Partnership state
-  const [partnership, setPartnership] = useState<Partnership | null>(null)
+  const [partnership, setPartnership] = useState<Partnership | null>(partnershipFromServer || null)
   const [inviteEmail, setInviteEmail] = useState('')
   const [sendingInvite, setSendingInvite] = useState(false)
   const [loadingPartnership, setLoadingPartnership] = useState(true)
-  const [startedAt, setStartedAt] = useState<string>('')
+  const [startedAt, setStartedAt] = useState<string>(partnershipFromServer?.started_at ? partnershipFromServer.started_at.split('T')[0] : '')
   const [savingDate, setSavingDate] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -49,7 +49,7 @@ export default function ProfileClient({ profile, partnership: partnershipFromSer
     // Use partnership from server if available
     if (partnershipFromServer) {
       setPartnership(partnershipFromServer)
-      setStartedAt(partnershipFromServer.started_at || '')
+      setStartedAt(partnershipFromServer.started_at ? partnershipFromServer.started_at.split('T')[0] : '')
       setLoadingPartnership(false)
       return
     }
@@ -95,6 +95,8 @@ export default function ProfileClient({ profile, partnership: partnershipFromSer
       
       if (error) throw error
       setMessage({ type: 'success', text: 'Дата сохранена!' })
+      setPartnership({ ...partnership!, started_at: startedAt || null })
+      router.refresh()
     } catch (error) {
       console.error('Error saving date:', error)
       setMessage({ type: 'error', text: 'Ошибка сохранения' })
@@ -420,18 +422,26 @@ export default function ProfileClient({ profile, partnership: partnershipFromSer
                     {(() => {
                       const start = new Date(startedAt)
                       const now = new Date()
-                      const years = now.getFullYear() - start.getFullYear()
-                      const months = now.getMonth() - start.getMonth()
-                      const days = now.getDate() - start.getDate()
-                      let totalMonths = years * 12 + months
-                      if (days < 0) totalMonths--
-                      const y = Math.floor(totalMonths / 12)
-                      const m = totalMonths % 12
-                      const d = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+                      
+                      let years = now.getFullYear() - start.getFullYear()
+                      let months = now.getMonth() - start.getMonth()
+                      let days = now.getDate() - start.getDate()
+                      
+                      if (days < 0) {
+                        months--
+                        const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+                        days += prevMonth.getDate()
+                      }
+                      
+                      if (months < 0) {
+                        years--
+                        months += 12
+                      }
+                      
                       const parts = []
-                      if (y > 0) parts.push(`${y} ${y === 1 ? 'год' : y < 5 ? 'года' : 'лет'}`)
-                      if (m > 0) parts.push(`${m} ${m === 1 ? 'месяц' : m < 5 ? 'месяца' : 'месяцев'}`)
-                      if (d > 0 && y === 0 && m === 0) parts.push(`${d} ${d === 1 ? 'день' : d < 5 ? 'дня' : 'дней'}`)
+                      if (years > 0) parts.push(`${years} ${years === 1 ? 'год' : years < 5 ? 'года' : 'лет'}`)
+                      if (months > 0) parts.push(`${months} ${months === 1 ? 'месяц' : months < 5 ? 'месяца' : 'месяцев'}`)
+                      if (days > 0) parts.push(`${days} ${days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}`)
                       return parts.join(' ') || 'меньше дня'
                     })()}
                   </p>

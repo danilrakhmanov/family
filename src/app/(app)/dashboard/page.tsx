@@ -7,12 +7,26 @@ function calculateDuration(startDate: string | null) {
   if (!startDate) return null
   const start = new Date(startDate)
   const now = new Date()
-  const years = now.getFullYear() - start.getFullYear()
-  const months = now.getMonth() - start.getMonth()
-  const days = now.getDate() - start.getDate()
-  let totalMonths = years * 12 + months
-  if (days < 0) totalMonths--
-  return { years: Math.floor(totalMonths / 12), months: totalMonths % 12, days: Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) }
+  
+  // Calculate years, months, and remaining days
+  let years = now.getFullYear() - start.getFullYear()
+  let months = now.getMonth() - start.getMonth()
+  let days = now.getDate() - start.getDate()
+  
+  // Adjust for negative days
+  if (days < 0) {
+    months--
+    const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+    days += prevMonth.getDate()
+  }
+  
+  // Adjust for negative months
+  if (months < 0) {
+    years--
+    months += 12
+  }
+  
+  return { years, months, days }
 }
 
 function formatDuration(duration: { years: number; months: number; days: number }) {
@@ -20,7 +34,7 @@ function formatDuration(duration: { years: number; months: number; days: number 
   const parts = []
   if (years > 0) parts.push(`${years} ${years === 1 ? 'год' : years < 5 ? 'года' : 'лет'}`)
   if (months > 0) parts.push(`${months} ${months === 1 ? 'месяц' : months < 5 ? 'месяца' : 'месяцев'}`)
-  if (days > 0 && years === 0 && months === 0) parts.push(`${days} ${days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}`)
+  if (days > 0) parts.push(`${days} ${days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}`)
   return parts.join(' ') || 'меньше дня'
 }
 
