@@ -109,13 +109,17 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
       case 'monthly':
         while (current <= endDate) {
           dates.push(getLocalDateStr(current))
-          current.setMonth(current.getMonth() + 1)
+          const next = new Date(current)
+          next.setMonth(next.getMonth() + 1)
+          current = next
         }
         return dates
       case 'yearly':
         while (current <= endDate) {
           dates.push(getLocalDateStr(current))
-          current.setFullYear(current.getFullYear() + 1)
+          const next = new Date(current)
+          next.setFullYear(next.getFullYear() + 1)
+          current = next
         }
         return dates
       default:
@@ -124,7 +128,9 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
     
     while (current <= endDate) {
       dates.push(getLocalDateStr(current))
-      current.setDate(current.getDate() + interval)
+      const next = new Date(current)
+      next.setDate(next.getDate() + interval)
+      current = next
     }
     
     return dates
