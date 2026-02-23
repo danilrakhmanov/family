@@ -1,9 +1,54 @@
 import { createClient } from '@/lib/supabase/server'
-import { CheckSquare, ShoppingCart, Film, Wallet, Calendar, Gift, BookHeart, TrendingUp, ChefHat } from 'lucide-react'
+import { CheckSquare, ShoppingCart, Film, Wallet, Calendar, Gift, BookHeart, TrendingUp, ChefHat, Heart } from 'lucide-react'
 import Link from 'next/link'
+import Avatar from '@/components/Avatar'
+
+function calculateDuration(startDate: string | null) {
+  if (!startDate) return null
+  const start = new Date(startDate)
+  const now = new Date()
+  const years = now.getFullYear() - start.getFullYear()
+  const months = now.getMonth() - start.getMonth()
+  const days = now.getDate() - start.getDate()
+  let totalMonths = years * 12 + months
+  if (days < 0) totalMonths--
+  return { years: Math.floor(totalMonths / 12), months: totalMonths % 12, days: Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) }
+}
+
+function formatDuration(duration: { years: number; months: number; days: number }) {
+  const { years, months, days } = duration
+  const parts = []
+  if (years > 0) parts.push(`${years} ${years === 1 ? 'год' : years < 5 ? 'года' : 'лет'}`)
+  if (months > 0) parts.push(`${months} ${months === 1 ? 'месяц' : months < 5 ? 'месяца' : 'месяцев'}`)
+  if (days > 0 && years === 0 && months === 0) parts.push(`${days} ${days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}`)
+  return parts.join(' ') || 'меньше дня'
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+  
+  // Get current user and partnership
+  const { data: { user: currentUser } } = await supabase.auth.getUser()
+  
+  let partnerProfile = null
+  let startedAt: string | null = null
+  let duration = null
+  
+  if (currentUser) {
+    const { data: partnership } = await supabase
+      .from('partnerships')
+      .select('*, user1:profiles!partnerships_user_id_1_fkey(full_name, avatar_url), user2:profiles!partnerships_user_id_2_fkey(full_name, avatar_url)')
+      .or(`user_id_1.eq.${currentUser.id},user_id_2.eq.${currentUser.id}`)
+      .eq('status', 'accepted')
+      .single()
+    
+    if (partnership) {
+      startedAt = partnership.started_at
+      partnerProfile = currentUser.id === partnership.user_id_1 ? partnership.user2 : partnership.user1
+    }
+  }
+  
+  duration = calculateDuration(startedAt)
   
   // Get counts for dashboard
   const [
@@ -98,6 +143,34 @@ export default async function DashboardPage() {
 
   return (
     <div className="pt-12 lg:pt-0">
+      {partnerProfile && (
+        <div className="card mb-6 flex items-center gap-4 bg-gradient-to-r from-purple-100 via-pink-100 to-purple-100 border-2 border-purple-200 shadow-lg shadow-purple-100/50">
+          <Avatar 
+            url={partnerProfile.avatar_url ?? null} 
+            name={partnerProfile.full_name ?? null} 
+            size="lg" 
+          />
+          <div className="flex-1">
+            <p className="text-sm text-purple-600 font-medium">Ваш партнёр</p>
+            <p className="text-lg font-bold text-gray-800">{partnerProfile.full_name ?? ' Партнёр'}</p>
+          </div>
+          {duration ? (
+            <div className="text-right bg-white/60 rounded-2xl px-4 py-2 border border-purple-200">
+              <p className="text-xs text-purple-500 uppercase tracking-wider font-semibold">Вместе</p>
+              <p className="text-xl font-bold text-purple-700 flex items-center gap-2">
+                <Heart className="w-5 h-5 text-pink-500 fill-pink-500 animate-pulse" />
+                {formatDuration(duration)}
+              </p>
+            </div>
+          ) : (
+            <a href="/profile" className="text-right bg-purple-100 rounded-2xl px-4 py-2 border border-purple-200 hover:bg-purple-200 transition-colors">
+              <p className="text-xs text-purple-500 uppercase tracking-wider font-semibold">Вместе</p>
+              <p className="text-sm font-medium text-purple-700">Указать дату</p>
+            </a>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6 lg:mb-8">
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">С возвращением!</h1>

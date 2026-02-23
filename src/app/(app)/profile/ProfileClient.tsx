@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Avatar from '@/components/Avatar'
-import { Camera, Loader2, Save, Mail, Check, X, Heart } from 'lucide-react'
+import { Camera, Loader2, Save, Mail, Check, X, Heart, Calendar } from 'lucide-react'
 import type { Profile } from '@/lib/database.types'
 
 interface Partnership {
@@ -14,15 +14,17 @@ interface Partnership {
   status: 'pending' | 'accepted' | 'rejected'
   invited_by: string
   created_at: string
+  started_at: string | null
   profile_1?: Profile
   profile_2?: Profile
 }
 
 interface ProfileClientProps {
   profile: Profile | null
+  partnership?: Partnership | null
 }
 
-export default function ProfileClient({ profile }: ProfileClientProps) {
+export default function ProfileClient({ profile, partnership: partnershipFromServer }: ProfileClientProps) {
   const [fullName, setFullName] = useState(profile?.full_name || '')
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url)
   const [loading, setLoading] = useState(false)
@@ -34,15 +36,26 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
   const [inviteEmail, setInviteEmail] = useState('')
   const [sendingInvite, setSendingInvite] = useState(false)
   const [loadingPartnership, setLoadingPartnership] = useState(true)
+  const [startedAt, setStartedAt] = useState<string>('')
+  const [savingDate, setSavingDate] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const supabase = createClient()
 
   // Load partnership info on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Load partnership info on mount
   useEffect(() => {
+    // Use partnership from server if available
+    if (partnershipFromServer) {
+      setPartnership(partnershipFromServer)
+      setStartedAt(partnershipFromServer.started_at || '')
+      setLoadingPartnership(false)
+      return
+    }
+    // Otherwise load from client
     loadPartnership()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadPartnership = async () => {
@@ -68,6 +81,25 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
       setPartnership(null)
     } finally {
       setLoadingPartnership(false)
+    }
+  }
+
+  const saveStartedAt = async () => {
+    if (!partnership) return
+    setSavingDate(true)
+    try {
+      const { error } = await supabase
+        .from('partnerships')
+        .update({ started_at: startedAt || null })
+        .eq('id', partnership.id)
+      
+      if (error) throw error
+      setMessage({ type: 'success', text: 'Дата сохранена!' })
+    } catch (error) {
+      console.error('Error saving date:', error)
+      setMessage({ type: 'error', text: 'Ошибка сохранения' })
+    } finally {
+      setSavingDate(false)
     }
   }
 
@@ -377,6 +409,59 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
                 <p className="text-sm text-gray-500">Вы видите общие данные</p>
               </div>
             </div>
+            
+            {/* Date Started Picker */}
+            <div className="mt-6 p-5 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-100 shadow-lg shadow-purple-100/50">
+              {startedAt && (
+                <div className="mb-4 text-center bg-white/60 rounded-xl py-3 px-4 border border-purple-200">
+                  <p className="text-xs text-purple-500 uppercase tracking-wider font-semibold mb-1">Вы вместе</p>
+                  <p className="text-2xl font-bold text-purple-700 flex items-center justify-center gap-2">
+                    <Heart className="w-6 h-6 text-pink-500 fill-pink-500 animate-pulse" />
+                    {(() => {
+                      const start = new Date(startedAt)
+                      const now = new Date()
+                      const years = now.getFullYear() - start.getFullYear()
+                      const months = now.getMonth() - start.getMonth()
+                      const days = now.getDate() - start.getDate()
+                      let totalMonths = years * 12 + months
+                      if (days < 0) totalMonths--
+                      const y = Math.floor(totalMonths / 12)
+                      const m = totalMonths % 12
+                      const d = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+                      const parts = []
+                      if (y > 0) parts.push(`${y} ${y === 1 ? 'год' : y < 5 ? 'года' : 'лет'}`)
+                      if (m > 0) parts.push(`${m} ${m === 1 ? 'месяц' : m < 5 ? 'месяца' : 'месяцев'}`)
+                      if (d > 0 && y === 0 && m === 0) parts.push(`${d} ${d === 1 ? 'день' : d < 5 ? 'дня' : 'дней'}`)
+                      return parts.join(' ') || 'меньше дня'
+                    })()}
+                  </p>
+                </div>
+              )}
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-5 h-5 text-purple-600" />
+                <p className="font-semibold text-gray-800">Дата начала отношений</p>
+              </div>
+              <p className="text-sm text-gray-500 mb-4">
+                Укажите дату, когда вы начали встречаться — она будет отображаться на главной странице
+              </p>
+              <div className="flex gap-3">
+                <input
+                  type="date"
+                  value={startedAt}
+                  onChange={(e) => setStartedAt(e.target.value)}
+                  className="input flex-1 bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-200"
+                  max={new Date().toISOString().split('T')[0]}
+                />
+                <button
+                  onClick={saveStartedAt}
+                  disabled={savingDate}
+                  className="btn-primary px-4"
+                >
+                  {savingDate ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
             <button
               onClick={breakPartnership}
               disabled={sendingInvite}
