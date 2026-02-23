@@ -36,7 +36,7 @@ export default function ProfileClient({ profile, partnership: partnershipFromSer
   const [inviteEmail, setInviteEmail] = useState('')
   const [sendingInvite, setSendingInvite] = useState(false)
   const [loadingPartnership, setLoadingPartnership] = useState(true)
-  const [startedAt, setStartedAt] = useState<string>(partnershipFromServer?.started_at ? partnershipFromServer.started_at.split('T')[0] : '')
+  const [startedAt, setStartedAt] = useState<string>('')
   const [savingDate, setSavingDate] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
