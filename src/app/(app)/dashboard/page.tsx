@@ -9,8 +9,8 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   
   // Get timezone from cookie (set by client)
-  const allCookies = await cookieStore.getAll()
-  const timezoneCookie = allCookies.find(c => c.name === 'timezone')
+  const cookieStore = await cookies()
+  const timezoneCookie = cookieStore.get('timezone')
   const userTimezone = timezoneCookie?.value ? decodeURIComponent(timezoneCookie.value) : 'UTC'
   
   // Get current user and partnership
@@ -34,7 +34,7 @@ export default async function DashboardPage() {
     }
   }
   
-  duration = calculateDuration(startedAt)
+  duration = calculateDuration(startedAt, new Date(), userTimezone)
   
   // Get counts for dashboard
   const [
