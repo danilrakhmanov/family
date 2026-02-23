@@ -12,12 +12,6 @@ const geistSans = localFont({
 export const metadata: Metadata = {
   title: "Наш Дом - Приложение для пар",
   description: "Уютное пространство для двоих. Делитесь задачами, планируйте вместе и сохраняйте воспоминания в одном красивом месте.",
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
   openGraph: {
     title: "Наш Дом - Приложение для пар",
     description: "Уютное пространство для двоих. Делитесь задачами, планируйте вместе и сохраняйте воспоминания.",

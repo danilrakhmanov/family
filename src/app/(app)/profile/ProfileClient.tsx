@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Avatar from '@/components/Avatar'
-import { Camera, Loader2, Save, Mail, Check, X, Heart, Calendar } from 'lucide-react'
+import { Camera, Loader2, Save, Mail, Check, X, Heart } from 'lucide-react'
 import type { Profile } from '@/lib/database.types'
 
 interface Partnership {
@@ -14,7 +14,6 @@ interface Partnership {
   status: 'pending' | 'accepted' | 'rejected'
   invited_by: string
   created_at: string
-  started_at: string | null
   profile_1?: Profile
   profile_2?: Profile
 }
@@ -35,8 +34,6 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
   const [inviteEmail, setInviteEmail] = useState('')
   const [sendingInvite, setSendingInvite] = useState(false)
   const [loadingPartnership, setLoadingPartnership] = useState(true)
-  const [startedAt, setStartedAt] = useState<string>('')
-  const [savingDate, setSavingDate] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
@@ -63,7 +60,6 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
 
       if (data && data.length > 0) {
         setPartnership(data[0] as Partnership)
-        setStartedAt(data[0].started_at ? data[0].started_at.split('T')[0] : '')
       } else {
         setPartnership(null)
       }
@@ -276,25 +272,6 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
       : partnership.profile_1?.avatar_url
   }
 
-  const saveStartedAt = async () => {
-    if (!partnership) return
-    setSavingDate(true)
-    try {
-      const { error } = await supabase
-        .from('partnerships')
-        .update({ started_at: startedAt || null })
-        .eq('id', partnership.id)
-      
-      if (error) throw error
-      setMessage({ type: 'success', text: 'Дата сохранена!' })
-    } catch (error) {
-      console.error('Error saving date:', error)
-      setMessage({ type: 'error', text: 'Ошибка сохранения' })
-    } finally {
-      setSavingDate(false)
-    }
-  }
-
   return (
     <div className="pt-12 lg:pt-0 max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold text-gray-800 mb-8">Настройки профиля</h1>
@@ -400,34 +377,6 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
                 <p className="text-sm text-gray-500">Вы видите общие данные</p>
               </div>
             </div>
-            
-            {/* Date Started Picker */}
-            <div className="mt-6 p-4 bg-purple-50 rounded-xl border border-purple-100">
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar className="w-5 h-5 text-purple-600" />
-                <p className="font-medium text-gray-800">Дата начала отношений</p>
-              </div>
-              <p className="text-sm text-gray-500 mb-3">
-                Укажите дату, когда вы начали встречаться — она будет отображаться на главной странице
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="date"
-                  value={startedAt}
-                  onChange={(e) => setStartedAt(e.target.value)}
-                  className="input flex-1"
-                  max={new Date().toISOString().split('T')[0]}
-                />
-                <button
-                  onClick={saveStartedAt}
-                  disabled={savingDate}
-                  className="btn-primary px-4"
-                >
-                  {savingDate ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
             <button
               onClick={breakPartnership}
               disabled={sendingInvite}
