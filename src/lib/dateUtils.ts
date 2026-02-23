@@ -15,11 +15,13 @@ export function calculateDuration(startDate: string | null, endDate: Date = new 
   
   if (isNaN(startYear) || isNaN(startMonth) || isNaN(startDay)) return null
   
-  // Get UTC components for end date
-  const end = new Date(endDate.toISOString())
-  const endYear = end.getUTCFullYear()
-  const endMonth = end.getUTCMonth()
-  const endDay = end.getUTCDate()
+  // Get UTC components for end date and add timezone offset (Moscow is UTC+3)
+  // This ensures calculation uses user's local time
+  const moscowOffset = 3 * 60 * 60 * 1000 // 3 hours in ms
+  const endWithOffset = new Date(endDate.getTime() + moscowOffset)
+  const endYear = endWithOffset.getUTCFullYear()
+  const endMonth = endWithOffset.getUTCMonth()
+  const endDay = endWithOffset.getUTCDate()
   
   // Calculate total months difference using calendar month approach
   let totalMonths = (endYear - startYear) * 12 + (endMonth - startMonth)
@@ -30,8 +32,8 @@ export function calculateDuration(startDate: string | null, endDate: Date = new 
   }
   
   // Convert back to years and months
-  const years = Math.floor(totalMonths / 12)
-  const months = totalMonths % 12
+  let years = Math.floor(totalMonths / 12)
+  let months = totalMonths % 12
   
   // Calculate remaining days
   // This is tricky - we want to show days since the start of current month
