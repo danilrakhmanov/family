@@ -57,7 +57,7 @@ export default async function DashboardPage() {
       .single()
     
     if (partnership) {
-      startedAt = partnership.started_at
+      startedAt = partnership.started_at ? partnership.started_at.split('T')[0] : null
       partnerProfile = currentUser.id === partnership.user_id_1 ? partnership.user2 : partnership.user1
     }
   }

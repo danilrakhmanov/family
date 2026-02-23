@@ -196,6 +196,7 @@ export interface Database {
           user_id: string
           created_at: string
           plan: PlanItem[]
+          repeat_type: string | null
         }
         Insert: {
           id?: string
@@ -206,6 +207,7 @@ export interface Database {
           user_id: string
           created_at?: string
           plan?: PlanItem[]
+          repeat_type?: string | null
         }
         Update: {
           id?: string
@@ -216,6 +218,7 @@ export interface Database {
           user_id?: string
           created_at?: string
           plan?: PlanItem[]
+          repeat_type?: string | null
         }
       }
       wishes: {

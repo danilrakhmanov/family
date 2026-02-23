@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/Avatar'
-import { Plus, Trash2, Loader2, Calendar as CalendarIcon, Clock, Pencil, Save, X } from 'lucide-react'
+import { Plus, Trash2, Loader2, Calendar as CalendarIcon, Clock, Pencil, Save, X, Repeat } from 'lucide-react'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import type { Event, PlanItem } from '@/lib/database.types'
@@ -14,6 +14,8 @@ type EventWithProfile = Event & {
     avatar_url: string | null
   } | null
   plan?: PlanItem[]
+  is_recurring?: boolean
+  parent_id?: string
 }
 
 interface CalendarClientProps {
@@ -31,6 +33,16 @@ const colorOptions = [
   { value: '#22d3ee', label: 'Голубой' },
 ]
 
+const repeatOptions = [
+  { value: 'none', label: 'Не повторять' },
+  { value: 'daily', label: 'Каждый день' },
+  { value: 'every_2_days', label: 'Через 1 день' },
+  { value: 'weekly', label: 'Каждую неделю' },
+  { value: 'every_2_weeks', label: 'Через 1 неделю' },
+  { value: 'monthly', label: 'Каждый месяц' },
+  { value: 'yearly', label: 'Каждый год' },
+]
+
 export default function CalendarClient({ initialEvents }: CalendarClientProps) {
   const [events, setEvents] = useState<EventWithProfile[]>(initialEvents)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
@@ -42,6 +54,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
   const [editColor, setEditColor] = useState('#b8a9a1')
   const [newEventTime, setNewEventTime] = useState('')
   const [newEventColor, setNewEventColor] = useState('#b8a9a1')
+  const [newEventRepeat, setNewEventRepeat] = useState('none')
   const [addingEvent, setAddingEvent] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null)
@@ -61,11 +74,89 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
     const day = String(date.getDate()).padStart(2, '0')
     return `${year}-${month}-${day}`
   }
+
+  // Get repeat label
+  const getRepeatLabel = (repeatType: string | null) => {
+    const option = repeatOptions.find(o => o.value === repeatType)
+    return option?.label || 'Не повторять'
+  }
+
+  // Generate recurring event dates
+  const generateRecurringDates = (startDate: string, repeatType: string | null): string[] => {
+    if (!repeatType || repeatType === 'none') return [startDate]
+    
+    const dates: string[] = []
+    const start = new Date(startDate)
+    const endDate = new Date()
+    endDate.setFullYear(endDate.getFullYear() + 1) // Generate for 1 year ahead
+    
+    let current = new Date(start)
+    let interval = 1
+    
+    switch (repeatType) {
+      case 'daily':
+        interval = 1
+        break
+      case 'every_2_days':
+        interval = 2
+        break
+      case 'weekly':
+        interval = 7
+        break
+      case 'every_2_weeks':
+        interval = 14
+        break
+      case 'monthly':
+        while (current <= endDate) {
+          dates.push(getLocalDateStr(current))
+          current.setMonth(current.getMonth() + 1)
+        }
+        return dates
+      case 'yearly':
+        while (current <= endDate) {
+          dates.push(getLocalDateStr(current))
+          current.setFullYear(current.getFullYear() + 1)
+        }
+        return dates
+      default:
+        return [startDate]
+    }
+    
+    while (current <= endDate) {
+      dates.push(getLocalDateStr(current))
+      current.setDate(current.getDate() + interval)
+    }
+    
+    return dates
+  }
+
+  // Get all events including recurring ones
+  const allEvents = useMemo(() => {
+    const result: EventWithProfile[] = []
+    const addedDates = new Set<string>()
+    
+    events.forEach(event => {
+      if (event.repeat_type && event.repeat_type !== 'none') {
+        const recurringDates = generateRecurringDates(event.event_date, event.repeat_type)
+        recurringDates.forEach(date => {
+          const key = `${event.id}-${date}`
+          if (!addedDates.has(key)) {
+            addedDates.add(key)
+            result.push({ ...event, event_date: date, is_recurring: true, parent_id: event.id })
+          }
+        })
+      } else {
+        result.push(event)
+      }
+    })
+    
+    return result
+  }, [events])
   
   const selectedDateStr = getLocalDateStr(selectedDate)
   const selectedDateEvents = useMemo(() => {
-    return events.filter(e => e.event_date === selectedDateStr)
-  }, [events, selectedDateStr])
+    return allEvents.filter(e => e.event_date === selectedDateStr)
+  }, [allEvents, selectedDateStr])
 
   const addEvent = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -88,7 +179,8 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
           event_date: selectedDateStr,
           event_time: newEventTime || null,
           color: newEventColor,
-          user_id: user.id
+          user_id: user.id,
+          repeat_type: newEventRepeat
         })
         .select('*, profiles:user_id(full_name, avatar_url)')
         .single()
@@ -99,6 +191,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
       setNewEventTitle('')
       setNewEventTime('')
       setNewEventColor('#b8a9a1')
+      setNewEventRepeat('none')
       setShowAddForm(false)
     } catch (error) {
       console.error('Error adding event:', error)
@@ -275,7 +368,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
   const tileContent = ({ date, view }: { date: Date; view: string }) => {
     if (view === 'month') {
       const dateStr = getLocalDateStr(date)
-      const dayEvents = events.filter(e => e.event_date === dateStr)
+      const dayEvents = allEvents.filter(e => e.event_date === dateStr)
       
       if (dayEvents.length > 0) {
         return (
@@ -308,6 +401,10 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
               value={selectedDate}
               tileContent={tileContent}
               className="w-full border-none"
+              locale="ru-RU"
+              formatDay={(locale, date) => 
+                new Intl.DateTimeFormat(locale, { day: 'numeric' }).format(date)
+              }
             />
           </div>
         </div>
@@ -364,6 +461,23 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                     />
                   ))}
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-500 mb-2 flex items-center gap-2">
+                  <Repeat className="w-4 h-4" />
+                  Повтор
+                </label>
+                <select
+                  value={newEventRepeat}
+                  onChange={(e) => setNewEventRepeat(e.target.value)}
+                  className="input w-full"
+                >
+                  {repeatOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="flex gap-2">
                 <button
@@ -451,12 +565,20 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                     <>
                       <div className="flex-1">
                         <p className="font-medium text-gray-800">{event.title}</p>
-                        {event.event_time && (
-                          <p className="text-sm text-gray-500 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {event.event_time}
-                          </p>
-                        )}
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          {event.event_time && (
+                            <p className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {event.event_time}
+                            </p>
+                          )}
+                          {(event.repeat_type && event.repeat_type !== 'none') && (
+                            <p className="flex items-center gap-1 text-blue-500">
+                              <Repeat className="w-3 h-3" />
+                              {getRepeatLabel(event.repeat_type)}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <button
                         onClick={() => setExpandedEventId(isExpanded ? null : event.id)}
