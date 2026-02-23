@@ -7,35 +7,46 @@
 export function calculateDuration(startDate: string | null, endDate: Date = new Date()): { years: number; months: number; days: number } | null {
   if (!startDate) return null
   
-  // Parse date as UTC to avoid timezone issues
-  // This ensures consistent calculation regardless of server timezone
+  // Parse start date components
   const startParts = startDate.split('-')
-  const start = new Date(Date.UTC(
-    parseInt(startParts[0]),
-    parseInt(startParts[1]) - 1,
-    parseInt(startParts[2])
-  ))
+  const startYear = parseInt(startParts[0])
+  const startMonth = parseInt(startParts[1]) - 1 // 0-indexed
+  const startDay = parseInt(startParts[2])
   
-  if (isNaN(start.getTime())) return null
+  if (isNaN(startYear) || isNaN(startMonth) || isNaN(startDay)) return null
   
   // Get UTC components for end date
-  const endUTC = new Date(endDate.toISOString())
+  const end = new Date(endDate.toISOString())
+  const endYear = end.getUTCFullYear()
+  const endMonth = end.getUTCMonth()
+  const endDay = end.getUTCDate()
   
-  let years = endUTC.getUTCFullYear() - start.getUTCFullYear()
-  let months = endUTC.getUTCMonth() - start.getUTCMonth()
-  let days = endUTC.getUTCDate() - start.getUTCDate()
+  // Calculate total months difference using calendar month approach
+  let totalMonths = (endYear - startYear) * 12 + (endMonth - startMonth)
   
-  // Adjust for negative days
-  if (days < 0) {
-    months--
-    const prevMonth = new Date(Date.UTC(endUTC.getUTCFullYear(), endUTC.getUTCMonth(), 0))
-    days += prevMonth.getUTCDate()
+  // Adjust: if current day is less than start day, haven't completed the month yet
+  if (endDay < startDay) {
+    totalMonths--
   }
   
-  // Adjust for negative months
-  if (months < 0) {
-    years--
-    months += 12
+  // Convert back to years and months
+  const years = Math.floor(totalMonths / 12)
+  const months = totalMonths % 12
+  
+  // Calculate remaining days
+  // This is tricky - we want to show days since the start of current month
+  let days: number
+  if (endDay >= startDay) {
+    // We passed the start day of current month
+    // Get days in current month
+    const daysInCurrentMonth = new Date(Date.UTC(endYear, endMonth + 1, 0)).getUTCDate()
+    days = Math.min(endDay - startDay, daysInCurrentMonth)
+  } else {
+    // We haven't reached start day yet, use previous month
+    const prevMonth = endMonth === 0 ? 11 : endMonth - 1
+    const prevYear = endMonth === 0 ? endYear - 1 : endYear
+    const daysInPrevMonth = new Date(Date.UTC(prevYear, prevMonth + 1, 0)).getUTCDate()
+    days = daysInPrevMonth - startDay + endDay
   }
   
   return { years, months, days }
