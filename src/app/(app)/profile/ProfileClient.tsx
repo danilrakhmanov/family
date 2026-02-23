@@ -444,7 +444,7 @@ export default function ProfileClient({ profile, partnership: partnershipFromSer
                   <p className="text-xs text-purple-500 uppercase tracking-wider font-semibold mb-1">Вы вместе</p>
                   <p className="text-2xl font-bold text-purple-700 flex items-center justify-center gap-2">
                     <Heart className="w-6 h-6 text-pink-500 fill-pink-500 animate-pulse" />
-                    {formatDuration(calculateDuration(startedAt))}
+                    {formatDuration(calculateDuration(startedAt, new Date(), getUserTimezone()))}
                   </p>
                 </div>
               )}
