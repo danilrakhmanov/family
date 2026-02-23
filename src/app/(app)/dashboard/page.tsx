@@ -5,7 +5,8 @@ import Avatar from '@/components/Avatar'
 
 function calculateDuration(startDate: string | null) {
   if (!startDate) return null
-  const start = new Date(startDate)
+  // Используем явное время 00:00:00 чтобы избежать проблем с часовыми поясами
+  const start = new Date(startDate + 'T00:00:00')
   const now = new Date()
   
   // Calculate years, months, and remaining days

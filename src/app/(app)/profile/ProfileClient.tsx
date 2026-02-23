@@ -420,7 +420,8 @@ export default function ProfileClient({ profile, partnership: partnershipFromSer
                   <p className="text-2xl font-bold text-purple-700 flex items-center justify-center gap-2">
                     <Heart className="w-6 h-6 text-pink-500 fill-pink-500 animate-pulse" />
                     {(() => {
-                      const start = new Date(startedAt)
+                      // Используем явное время 00:00:00 чтобы избежать проблем с часовыми поясами
+                      const start = new Date(startedAt + 'T00:00:00')
                       const now = new Date()
                       
                       let years = now.getFullYear() - start.getFullYear()
