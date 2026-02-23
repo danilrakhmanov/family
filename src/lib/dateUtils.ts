@@ -7,20 +7,29 @@
 export function calculateDuration(startDate: string | null, endDate: Date = new Date()): { years: number; months: number; days: number } | null {
   if (!startDate) return null
   
-  // Use explicit time 00:00:00 to avoid timezone issues
-  const start = new Date(startDate + 'T00:00:00')
+  // Parse date as UTC to avoid timezone issues
+  // This ensures consistent calculation regardless of server timezone
+  const startParts = startDate.split('-')
+  const start = new Date(Date.UTC(
+    parseInt(startParts[0]),
+    parseInt(startParts[1]) - 1,
+    parseInt(startParts[2])
+  ))
   
   if (isNaN(start.getTime())) return null
   
-  let years = endDate.getFullYear() - start.getFullYear()
-  let months = endDate.getMonth() - start.getMonth()
-  let days = endDate.getDate() - start.getDate()
+  // Get UTC components for end date
+  const endUTC = new Date(endDate.toISOString())
+  
+  let years = endUTC.getUTCFullYear() - start.getUTCFullYear()
+  let months = endUTC.getUTCMonth() - start.getUTCMonth()
+  let days = endUTC.getUTCDate() - start.getUTCDate()
   
   // Adjust for negative days
   if (days < 0) {
     months--
-    const prevMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 0)
-    days += prevMonth.getDate()
+    const prevMonth = new Date(Date.UTC(endUTC.getUTCFullYear(), endUTC.getUTCMonth(), 0))
+    days += prevMonth.getUTCDate()
   }
   
   // Adjust for negative months
