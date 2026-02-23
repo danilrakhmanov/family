@@ -15,9 +15,10 @@ type ItemWithProfile = ShoppingItem & {
 
 interface ShoppingClientProps {
   initialItems: ItemWithProfile[]
+  currentUserId: string | null
 }
 
-export default function ShoppingClient({ initialItems }: ShoppingClientProps) {
+export default function ShoppingClient({ initialItems, currentUserId }: ShoppingClientProps) {
   const [items, setItems] = useState<ItemWithProfile[]>(initialItems)
   const [newItem, setNewItem] = useState('')
   const [newPrice, setNewPrice] = useState('')
@@ -26,6 +27,7 @@ export default function ShoppingClient({ initialItems }: ShoppingClientProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [editPrice, setEditPrice] = useState('')
+  const [sortFilter, setSortFilter] = useState<'all' | 'mine' | 'partner'>('all')
   
   const supabase = createClient()
 
@@ -151,8 +153,16 @@ export default function ShoppingClient({ initialItems }: ShoppingClientProps) {
     }
   }
 
-  const pendingItems = items.filter(i => !i.purchased)
-  const purchasedItems = items.filter(i => i.purchased)
+  const pendingItems = items.filter(i => {
+    if (sortFilter === 'mine') return i.user_id === currentUserId && !i.purchased
+    if (sortFilter === 'partner') return i.user_id !== currentUserId && !i.purchased
+    return !i.purchased
+  })
+  const purchasedItems = items.filter(i => {
+    if (sortFilter === 'mine') return i.user_id === currentUserId && i.purchased
+    if (sortFilter === 'partner') return i.user_id !== currentUserId && i.purchased
+    return i.purchased
+  })
 
   const totalEstimated = pendingItems.reduce((sum, item) => 
     sum + (item.estimated_price || 0), 0
@@ -162,6 +172,40 @@ export default function ShoppingClient({ initialItems }: ShoppingClientProps) {
     <div className="pt-12 lg:pt-0">
       <h1 className="text-3xl font-bold text-gray-800 mb-2">Список покупок</h1>
       <p className="text-gray-500 mb-6">Планируйте покупки вместе</p>
+
+      {/* Filter */}
+      <div className="flex gap-1 bg-purple-100 rounded-lg p-1 mb-6">
+        <button
+          onClick={() => setSortFilter('all')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            sortFilter === 'all' 
+              ? 'bg-purple-600 text-white shadow-sm' 
+              : 'text-purple-700 hover:text-purple-900 hover:bg-purple-200'
+          }`}
+        >
+          Все
+        </button>
+        <button
+          onClick={() => setSortFilter('mine')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            sortFilter === 'mine' 
+              ? 'bg-purple-600 text-white shadow-sm' 
+              : 'text-purple-700 hover:text-purple-900 hover:bg-purple-200'
+          }`}
+        >
+          Мои
+        </button>
+        <button
+          onClick={() => setSortFilter('partner')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            sortFilter === 'partner' 
+              ? 'bg-purple-600 text-white shadow-sm' 
+              : 'text-purple-700 hover:text-purple-900 hover:bg-purple-200'
+          }`}
+        >
+          Партнёра
+        </button>
+      </div>
 
       {/* Add Item Form */}
       <form onSubmit={addItem} className="card p-4 mb-8">

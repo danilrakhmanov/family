@@ -709,33 +709,33 @@ export default function FinanceClient({ initialGoals, initialExpenses, currentUs
           </form>
 
           {/* Filter */}
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1 mb-4">
+          <div className="flex gap-1 bg-purple-100 rounded-lg p-1 mb-4">
             <button
               onClick={() => setSortFilter('all')}
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 sortFilter === 'all' 
-                  ? 'bg-white text-gray-800 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'bg-purple-600 text-white shadow-sm' 
+                  : 'text-purple-700 hover:text-purple-900 hover:bg-purple-200'
               }`}
             >
               Все
             </button>
             <button
               onClick={() => setSortFilter('mine')}
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 sortFilter === 'mine' 
-                  ? 'bg-white text-gray-800 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'bg-purple-600 text-white shadow-sm' 
+                  : 'text-purple-700 hover:text-purple-900 hover:bg-purple-200'
               }`}
             >
               Мои
             </button>
             <button
               onClick={() => setSortFilter('partner')}
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 sortFilter === 'partner' 
-                  ? 'bg-white text-gray-800 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'bg-purple-600 text-white shadow-sm' 
+                  : 'text-purple-700 hover:text-purple-900 hover:bg-purple-200'
               }`}
             >
               Партнёра

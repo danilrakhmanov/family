@@ -15,9 +15,10 @@ type TodoWithProfile = Todo & {
 
 interface TasksClientProps {
   initialTodos: TodoWithProfile[]
+  currentUserId: string | null
 }
 
-export default function TasksClient({ initialTodos }: TasksClientProps) {
+export default function TasksClient({ initialTodos, currentUserId }: TasksClientProps) {
   const [todos, setTodos] = useState<TodoWithProfile[]>(initialTodos)
   const [newTask, setNewTask] = useState('')
   const [loading, setLoading] = useState(false)
@@ -25,6 +26,7 @@ export default function TasksClient({ initialTodos }: TasksClientProps) {
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
+  const [sortFilter, setSortFilter] = useState<'all' | 'mine' | 'partner'>('all')
   
   const supabase = createClient()
 
@@ -144,13 +146,55 @@ export default function TasksClient({ initialTodos }: TasksClientProps) {
     }
   }
 
-  const pendingTodos = todos.filter(t => !t.completed)
-  const completedTodos = todos.filter(t => t.completed)
+  const pendingTodos = todos.filter(t => {
+    if (sortFilter === 'mine') return t.user_id === currentUserId && !t.completed
+    if (sortFilter === 'partner') return t.user_id !== currentUserId && !t.completed
+    return !t.completed
+  })
+  const completedTodos = todos.filter(t => {
+    if (sortFilter === 'mine') return t.user_id === currentUserId && t.completed
+    if (sortFilter === 'partner') return t.user_id !== currentUserId && t.completed
+    return t.completed
+  })
 
   return (
     <div className="pt-12 lg:pt-0">
       <h1 className="text-2xl lg:text-3xl font-bold text-gray-800 mb-1 lg:mb-2">Задачи</h1>
       <p className="text-gray-500 mb-4 lg:mb-6 text-sm lg:text-base">Отслеживайте дела для двоих</p>
+
+      {/* Filter */}
+      <div className="flex gap-1 bg-purple-100 rounded-lg p-1 mb-6">
+        <button
+          onClick={() => setSortFilter('all')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            sortFilter === 'all' 
+              ? 'bg-purple-600 text-white shadow-sm' 
+              : 'text-purple-700 hover:text-purple-900 hover:bg-purple-200'
+          }`}
+        >
+          Все
+        </button>
+        <button
+          onClick={() => setSortFilter('mine')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            sortFilter === 'mine' 
+              ? 'bg-purple-600 text-white shadow-sm' 
+              : 'text-purple-700 hover:text-purple-900 hover:bg-purple-200'
+          }`}
+        >
+          Мои
+        </button>
+        <button
+          onClick={() => setSortFilter('partner')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            sortFilter === 'partner' 
+              ? 'bg-purple-600 text-white shadow-sm' 
+              : 'text-purple-700 hover:text-purple-900 hover:bg-purple-200'
+          }`}
+        >
+          Партнёра
+        </button>
+      </div>
 
       {/* Add Task Form */}
       <form onSubmit={addTask} className="flex gap-2 lg:gap-3 mb-6 lg:mb-8">

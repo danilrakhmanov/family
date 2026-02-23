@@ -1,9 +1,77 @@
 import { createClient } from '@/lib/supabase/server'
-import { CheckSquare, ShoppingCart, Film, Wallet, Calendar, Gift, BookHeart, TrendingUp, ChefHat } from 'lucide-react'
+import { CheckSquare, ShoppingCart, Film, Wallet, Calendar, Gift, BookHeart, TrendingUp, ChefHat, Heart } from 'lucide-react'
 import Link from 'next/link'
+import Avatar from '@/components/Avatar'
+
+function calculateDuration(startDate: string | null) {
+  if (!startDate) return null
+  
+  const start = new Date(startDate)
+  const now = new Date()
+  
+  const years = now.getFullYear() - start.getFullYear()
+  const months = now.getMonth() - start.getMonth()
+  const days = now.getDate() - start.getDate()
+  
+  let totalMonths = years * 12 + months
+  let totalDays = days
+  
+  if (totalDays < 0) {
+    totalMonths--
+    const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+    totalDays += prevMonth.getDate()
+  }
+  
+  if (totalMonths < 0) {
+    totalMonths = 0
+    totalDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+  }
+  
+  return { years: Math.floor(totalMonths / 12), months: totalMonths % 12, days: totalDays }
+}
+
+function formatDuration(duration: { years: number; months: number; days: number } | null) {
+  if (!duration) return null
+  
+  const parts = []
+  if (duration.years > 0) {
+    parts.push(`${duration.years} ${duration.years === 1 ? 'год' : duration.years < 5 ? 'года' : 'лет'}`)
+  }
+  if (duration.months > 0) {
+    parts.push(`${duration.months} ${duration.months === 1 ? 'месяц' : duration.months < 5 ? 'месяца' : 'месяцев'}`)
+  }
+  if (duration.days > 0 || parts.length === 0) {
+    parts.push(`${duration.days} ${duration.days === 1 ? 'день' : duration.days < 5 ? 'дня' : 'дней'}`)
+  }
+  
+  return parts.join(' ')
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+  
+  // Get current user
+  const { data: { user: currentUser } } = await supabase.auth.getUser()
+  
+  // Get partnership info
+  let partnerProfile = null
+  let startedAt = null
+  
+  if (currentUser) {
+    const { data: partnership } = await supabase
+      .from('partnerships')
+      .select('*, user1:profiles!partnerships_user_id_1_fkey(full_name, avatar_url), user2:profiles!partnerships_user_id_2_fkey(full_name, avatar_url)')
+      .or(`user_id_1.eq.${currentUser.id},user_id_2.eq.${currentUser.id}`)
+      .eq('status', 'accepted')
+      .single()
+    
+    if (partnership) {
+      startedAt = partnership.started_at
+      partnerProfile = currentUser.id === partnership.user_id_1 ? partnership.user2 : partnership.user1
+    }
+  }
+  
+  const duration = calculateDuration(startedAt)
   
   // Get counts for dashboard
   const [
@@ -98,6 +166,30 @@ export default async function DashboardPage() {
 
   return (
     <div className="pt-12 lg:pt-0">
+      {/* Partner Section */}
+      {partnerProfile && (
+        <div className="card mb-6 flex items-center gap-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100">
+          <Avatar 
+            url={partnerProfile.avatar_url ?? null} 
+            name={partnerProfile.full_name ?? null} 
+            size="lg" 
+          />
+          <div className="flex-1">
+            <p className="text-sm text-purple-600 font-medium">Ваш партнёр</p>
+            <p className="text-lg font-bold text-gray-800">{partnerProfile.full_name ?? ' Партнёр'}</p>
+          </div>
+          {duration && (
+            <div className="text-right">
+              <p className="text-sm text-purple-500">Вместе</p>
+              <p className="text-xl font-bold text-purple-700 flex items-center gap-1">
+                <Heart className="w-4 h-4 text-pink-500" />
+                {formatDuration(duration)}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6 lg:mb-8">
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">С возвращением!</h1>
