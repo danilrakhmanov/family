@@ -2,11 +2,11 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { calculateDuration, formatDuration, getUserTimezone } from '@/lib/dateUtils'
 import { useRouter } from 'next/navigation'
 import Avatar from '@/components/Avatar'
 import { Camera, Loader2, Save, Mail, Check, X, Heart, Calendar } from 'lucide-react'
 import type { Profile } from '@/lib/database.types'
-import { calculateDuration, formatDuration } from '@/lib/dateUtils'
 
 interface Partnership {
   id: string
@@ -45,7 +45,6 @@ export default function ProfileClient({ profile, partnership: partnershipFromSer
   const supabase = createClient()
 
   // Load partnership info on mount
-  // Load partnership info on mount
   useEffect(() => {
     // Use partnership from server if available
     if (partnershipFromServer) {
@@ -57,6 +56,31 @@ export default function ProfileClient({ profile, partnership: partnershipFromSer
     // Otherwise load from client
     loadPartnership()
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Save timezone to profile on mount
+  useEffect(() => {
+    const saveTimezone = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        
+        const timezone = getUserTimezone()
+        
+        // Update profile with timezone
+        await supabase
+          .from('profiles')
+          .update({ timezone })
+          .eq('id', user.id)
+          
+        // Also set cookie for SSR pages
+        document.cookie = `timezone=${encodeURIComponent(timezone)}; path=/; max-age=31536000`
+      } catch (err) {
+        console.error('Failed to save timezone:', err)
+      }
+    }
+    
+    saveTimezone()
   }, [])
 
   const loadPartnership = async () => {

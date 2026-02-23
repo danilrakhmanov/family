@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 import { CheckSquare, ShoppingCart, Film, Wallet, Calendar, Gift, BookHeart, TrendingUp, ChefHat, Heart } from 'lucide-react'
 import Link from 'next/link'
 import Avatar from '@/components/Avatar'
@@ -6,6 +7,11 @@ import { calculateDuration, formatDuration } from '@/lib/dateUtils'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+  
+  // Get timezone from cookie (set by client)
+  const allCookies = await cookieStore.getAll()
+  const timezoneCookie = allCookies.find(c => c.name === 'timezone')
+  const userTimezone = timezoneCookie?.value ? decodeURIComponent(timezoneCookie.value) : 'UTC'
   
   // Get current user and partnership
   const { data: { user: currentUser } } = await supabase.auth.getUser()

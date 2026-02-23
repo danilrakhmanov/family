@@ -1,10 +1,38 @@
 /**
+ * Get timezone offset in milliseconds from timezone string
+ * @param timezone - IANA timezone string (e.g., 'Europe/Moscow', 'America/New_York')
+ * @returns Offset in milliseconds
+ */
+export function getTimezoneOffset(timezone: string): number {
+  try {
+    const now = new Date()
+    const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }))
+    const tzDate = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
+    return tzDate.getTime() - utcDate.getTime()
+  } catch {
+    return 0 // Default to UTC if timezone is invalid
+  }
+}
+
+/**
+ * Get user's timezone from browser or return default
+ * @returns User's timezone string
+ */
+export function getUserTimezone(): string {
+  if (typeof window === 'undefined') {
+    return 'UTC' // Server-side default
+  }
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+}
+
+/**
  * Calculate the duration between two dates
  * @param startDate - Start date in YYYY-MM-DD format
  * @param endDate - End date (defaults to now)
+ * @param timezone - User's timezone (defaults to UTC)
  * @returns Duration object with years, months, and days, or null if invalid
  */
-export function calculateDuration(startDate: string | null, endDate: Date = new Date()): { years: number; months: number; days: number } | null {
+export function calculateDuration(startDate: string | null, endDate: Date = new Date(), timezone: string = 'UTC'): { years: number; months: number; days: number } | null {
   if (!startDate) return null
   
   // Parse start date components
@@ -15,10 +43,9 @@ export function calculateDuration(startDate: string | null, endDate: Date = new 
   
   if (isNaN(startYear) || isNaN(startMonth) || isNaN(startDay)) return null
   
-  // Get UTC components for end date and add timezone offset (Moscow is UTC+3)
-  // This ensures calculation uses user's local time
-  const moscowOffset = 3 * 60 * 60 * 1000 // 3 hours in ms
-  const endWithOffset = new Date(endDate.getTime() + moscowOffset)
+  // Get offset for user's timezone
+  const offset = getTimezoneOffset(timezone)
+  const endWithOffset = new Date(endDate.getTime() + offset)
   const endYear = endWithOffset.getUTCFullYear()
   const endMonth = endWithOffset.getUTCMonth()
   const endDay = endWithOffset.getUTCDate()
@@ -36,15 +63,11 @@ export function calculateDuration(startDate: string | null, endDate: Date = new 
   const months = totalMonths % 12
   
   // Calculate remaining days
-  // This is tricky - we want to show days since the start of current month
   let days: number
   if (endDay >= startDay) {
-    // We passed the start day of current month
-    // Get days in current month
     const daysInCurrentMonth = new Date(Date.UTC(endYear, endMonth + 1, 0)).getUTCDate()
     days = Math.min(endDay - startDay, daysInCurrentMonth)
   } else {
-    // We haven't reached start day yet, use previous month
     const prevMonth = endMonth === 0 ? 11 : endMonth - 1
     const prevYear = endMonth === 0 ? endYear - 1 : endYear
     const daysInPrevMonth = new Date(Date.UTC(prevYear, prevMonth + 1, 0)).getUTCDate()
