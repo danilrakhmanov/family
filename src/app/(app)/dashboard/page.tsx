@@ -3,7 +3,14 @@ import { cookies } from 'next/headers'
 import { CheckSquare, ShoppingCart, Film, Wallet, Calendar, Gift, BookHeart, TrendingUp, ChefHat, Heart } from 'lucide-react'
 import Link from 'next/link'
 import Avatar from '@/components/Avatar'
-import { calculateDuration, formatDuration } from '@/lib/dateUtils'
+import { calculateDuration, formatDuration, getTimezoneOffset } from '@/lib/dateUtils'
+
+// Helper to get current date in user's timezone
+function getUserDateString(timezone: string): string {
+  const offset = getTimezoneOffset(timezone)
+  const date = new Date(Date.now() + offset)
+  return date.toISOString().split('T')[0]
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -50,7 +57,7 @@ export default async function DashboardPage() {
     supabase.from('shopping_items').select('*', { count: 'exact', head: true }).eq('purchased', false),
     supabase.from('movies').select('*', { count: 'exact', head: true }).eq('watched', false),
     supabase.from('goals').select('current_amount, target_amount'),
-    supabase.from('events').select('*', { count: 'exact', head: true }).gte('date', new Date().toISOString().split('T')[0]),
+    supabase.from('events').select('*', { count: 'exact', head: true }).gte('event_date', getUserDateString(userTimezone)),
     supabase.from('wishes').select('*', { count: 'exact', head: true }).eq('purchased', false),
     supabase.from('memories').select('*', { count: 'exact', head: true }),
   ])
