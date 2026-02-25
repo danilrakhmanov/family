@@ -50,7 +50,7 @@ export default async function DashboardPage() {
     supabase.from('shopping_items').select('*', { count: 'exact', head: true }).eq('purchased', false),
     supabase.from('movies').select('*', { count: 'exact', head: true }).eq('watched', false),
     supabase.from('goals').select('current_amount, target_amount'),
-    supabase.from('events').select('*', { count: 'exact', head: true }),
+    supabase.from('events').select('*', { count: 'exact', head: true }).gte('date', new Date().toISOString().split('T')[0]),
     supabase.from('wishes').select('*', { count: 'exact', head: true }).eq('purchased', false),
     supabase.from('memories').select('*', { count: 'exact', head: true }),
   ])
