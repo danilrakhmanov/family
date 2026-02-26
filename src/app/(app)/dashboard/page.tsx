@@ -12,16 +12,42 @@ function getUserDateString(timezone: string): string {
   return date.toISOString().split('T')[0]
 }
 
+// Helper to get current datetime in user's timezone for time comparison
+function getUserDateTimeISO(timezone: string): string {
+  const offset = getTimezoneOffset(timezone)
+  const date = new Date(Date.now() + offset)
+  // Format as ISO with timezone offset for comparison
+  const year = date.getUTCFullYear()
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(date.getUTCDate()).padStart(2, '0')
+  const hours = String(date.getUTCHours()).padStart(2, '0')
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient()
   
-  // Get timezone from cookie (set by client)
+  // Get timezone from cookie first, then from profile
   const cookieStore = await cookies()
   const timezoneCookie = cookieStore.get('timezone')
-  const userTimezone = timezoneCookie?.value ? decodeURIComponent(timezoneCookie.value) : 'UTC'
+  let userTimezone = timezoneCookie?.value ? decodeURIComponent(timezoneCookie.value) : 'UTC'
   
-  // Get current user and partnership
+  // Get current user and their profile for timezone
   const { data: { user: currentUser } } = await supabase.auth.getUser()
+  
+  // Try to get timezone from profile
+  if (currentUser) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('timezone')
+      .eq('id', currentUser.id)
+      .single()
+    
+    if (profile?.timezone) {
+      userTimezone = profile.timezone
+    }
+  }
   
   let partnerProfile = null
   let startedAt: string | null = null
@@ -44,12 +70,30 @@ export default async function DashboardPage() {
   duration = calculateDuration(startedAt, new Date(), userTimezone)
   
   // Get counts for dashboard
+  const todayStr = getUserDateString(userTimezone)
+  const currentTimeStr = getUserDateTimeISO(userTimezone)
+  
+  // Fetch events and filter out past events (for today, check time)
+  const { data: todayEvents } = await supabase
+    .from('events')
+    .select('event_date, event_time')
+    .gte('event_date', todayStr)
+  
+  // Filter events: future dates OR today with future time
+  const eventsCount = todayEvents?.filter(e => {
+    if (e.event_date > todayStr) return true // Future date
+    if (e.event_date === todayStr && e.event_time) {
+      // Compare time strings (format: HH:MM)
+      return e.event_time > currentTimeStr.split('T')[1].substring(0, 5)
+    }
+    return e.event_date === todayStr && !e.event_time // Today with no time = all day
+  }).length || 0
+  
   const [
     { count: todosCount },
     { count: shoppingCount },
     { count: moviesCount },
     { data: goalsData },
-    { count: eventsCount },
     { count: wishesCount },
     { count: memoriesCount },
   ] = await Promise.all([
@@ -57,7 +101,6 @@ export default async function DashboardPage() {
     supabase.from('shopping_items').select('*', { count: 'exact', head: true }).eq('purchased', false),
     supabase.from('movies').select('*', { count: 'exact', head: true }).eq('watched', false),
     supabase.from('goals').select('current_amount, target_amount'),
-    supabase.from('events').select('*', { count: 'exact', head: true }).gte('event_date', getUserDateString(userTimezone)),
     supabase.from('wishes').select('*', { count: 'exact', head: true }).eq('purchased', false),
     supabase.from('memories').select('*', { count: 'exact', head: true }),
   ])
