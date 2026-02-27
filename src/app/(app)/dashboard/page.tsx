@@ -71,29 +71,13 @@ export default async function DashboardPage() {
   
   // Get counts for dashboard
   const todayStr = getUserDateString(userTimezone)
-  const currentTimeStr = getUserDateTimeISO(userTimezone)
-  
-  // Fetch events and filter out past events (for today, check time)
-  const { data: todayEvents } = await supabase
-    .from('events')
-    .select('event_date, event_time')
-    .gte('event_date', todayStr)
-  
-  // Filter events: future dates OR today with future time
-  const eventsCount = todayEvents?.filter(e => {
-    if (e.event_date > todayStr) return true // Future date
-    if (e.event_date === todayStr && e.event_time) {
-      // Compare time strings (format: HH:MM)
-      return e.event_time > currentTimeStr.split('T')[1].substring(0, 5)
-    }
-    return e.event_date === todayStr && !e.event_time // Today with no time = all day
-  }).length || 0
   
   const [
     { count: todosCount },
     { count: shoppingCount },
     { count: moviesCount },
     { data: goalsData },
+    { count: eventsCount },
     { count: wishesCount },
     { count: memoriesCount },
   ] = await Promise.all([
@@ -101,6 +85,7 @@ export default async function DashboardPage() {
     supabase.from('shopping_items').select('*', { count: 'exact', head: true }).eq('purchased', false),
     supabase.from('movies').select('*', { count: 'exact', head: true }).eq('watched', false),
     supabase.from('goals').select('current_amount, target_amount'),
+    supabase.from('events').select('*', { count: 'exact', head: true }).gte('event_date', todayStr),
     supabase.from('wishes').select('*', { count: 'exact', head: true }).eq('purchased', false),
     supabase.from('memories').select('*', { count: 'exact', head: true }),
   ])
