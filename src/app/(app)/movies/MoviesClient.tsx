@@ -79,12 +79,7 @@ export default function MoviesClient({ initialMovies }: MoviesClientProps) {
       setSearching(true)
       try {
         const response = await fetch(
-          `https://api.kinopoisk.dev/v1.4/movie/search?page=1&limit=5&query=${encodeURIComponent(searchQuery)}`,
-          {
-            headers: {
-              'X-API-KEY': process.env.NEXT_PUBLIC_KINOPOISK_API_KEY || ''
-            }
-          }
+          `/api/movies/search?q=${encodeURIComponent(searchQuery)}`
         )
         
         if (!response.ok) throw new Error('API error')
