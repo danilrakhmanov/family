@@ -12,19 +12,6 @@ function getUserDateString(timezone: string): string {
   return date.toISOString().split('T')[0]
 }
 
-// Helper to get current datetime in user's timezone for time comparison
-function getUserDateTimeISO(timezone: string): string {
-  const offset = getTimezoneOffset(timezone)
-  const date = new Date(Date.now() + offset)
-  // Format as ISO with timezone offset for comparison
-  const year = date.getUTCFullYear()
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(date.getUTCDate()).padStart(2, '0')
-  const hours = String(date.getUTCHours()).padStart(2, '0')
-  const minutes = String(date.getUTCMinutes()).padStart(2, '0')
-  return `${year}-${month}-${day}T${hours}:${minutes}`
-}
-
 export default async function DashboardPage() {
   const supabase = await createClient()
   
