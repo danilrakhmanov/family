@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/Avatar'
-import { Plus, Trash2, Loader2, Calendar as CalendarIcon, Clock, Pencil, Save, X, Repeat } from 'lucide-react'
+import { Plus, Trash2, Loader2, Calendar as CalendarIcon, Clock, Pencil, Save, X, Repeat, Sparkles, Heart, User } from 'lucide-react'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import type { Event, PlanItem } from '@/lib/database.types'
@@ -22,16 +22,23 @@ interface CalendarClientProps {
   initialEvents: EventWithProfile[]
 }
 
-const colorOptions = [
-  { value: '#f472b6', label: 'Розовый' },
-  { value: '#60a5fa', label: 'Синий' },
-  { value: '#34d399', label: 'Зелёный' },
-  { value: '#fbbf24', label: 'Жёлтый' },
-  { value: '#fb923c', label: 'Оранжевый' },
-  { value: '#a78bfa', label: 'Фиолетовый' },
-  { value: '#f87171', label: 'Красный' },
-  { value: '#22d3ee', label: 'Голубой' },
+// Цвета для моих событий
+const myColorOptions = [
+  { value: '#ec4899', label: 'Розовый', gradient: 'from-pink-500 to-rose-500' },
+  { value: '#f97316', label: 'Оранжевый', gradient: 'from-orange-500 to-amber-500' },
+  { value: '#ef4444', label: 'Красный', gradient: 'from-red-500 to-rose-500' },
+  { value: '#8b5cf6', label: 'Фиолетовый', gradient: 'from-violet-500 to-purple-500' },
 ]
+
+// Цвета для событий партнёра
+const partnerColorOptions = [
+  { value: '#3b82f6', label: 'Синий', gradient: 'from-blue-500 to-cyan-500' },
+  { value: '#10b981', label: 'Зелёный', gradient: 'from-emerald-500 to-teal-500' },
+  { value: '#06b6d4', label: 'Голубой', gradient: 'from-cyan-500 to-sky-500' },
+  { value: '#6366f1', label: 'Индиго', gradient: 'from-indigo-500 to-violet-500' },
+]
+
+const allColorOptions = [...myColorOptions, ...partnerColorOptions]
 
 const repeatOptions = [
   { value: 'none', label: 'Не повторять' },
@@ -43,6 +50,10 @@ const repeatOptions = [
   { value: 'yearly', label: 'Каждый год' },
 ]
 
+// Цвета для индикаторов моих событий и партнёра
+const MY_EVENT_COLOR = '#ec4899' // Розовый
+const PARTNER_EVENT_COLOR = '#3b82f6' // Синий
+
 export default function CalendarClient({ initialEvents }: CalendarClientProps) {
   const [events, setEvents] = useState<EventWithProfile[]>(initialEvents)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
@@ -51,9 +62,9 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editTime, setEditTime] = useState('')
-  const [editColor, setEditColor] = useState('#b8a9a1')
+  const [editColor, setEditColor] = useState('#ec4899')
   const [newEventTime, setNewEventTime] = useState('')
-  const [newEventColor, setNewEventColor] = useState('#b8a9a1')
+  const [newEventColor, setNewEventColor] = useState('#ec4899')
   const [newEventRepeat, setNewEventRepeat] = useState('none')
   const [addingEvent, setAddingEvent] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -64,8 +75,20 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null)
   const [editPlanTime, setEditPlanTime] = useState('')
   const [editPlanTitle, setEditPlanTitle] = useState('')
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   
   const supabase = createClient()
+
+  // Get current user on mount
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setCurrentUserId(user.id)
+      }
+    }
+    getUser()
+  }, [supabase.auth])
 
   // Get events for selected date - use local timezone
   const getLocalDateStr = (date: Date) => {
@@ -370,22 +393,55 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
     setEditPlanTitle(item.title)
   }
 
-  // Custom tile content to show event dots
+  // Custom tile content to show event dots with different colors for user/partner
   const tileContent = ({ date, view }: { date: Date; view: string }) => {
     if (view === 'month') {
       const dateStr = getLocalDateStr(date)
       const dayEvents = allEvents.filter(e => e.event_date === dateStr)
       
       if (dayEvents.length > 0) {
+        // Separate my events and partner's events
+        const myEvents = dayEvents.filter(e => e.user_id === currentUserId)
+        const partnerEvents = dayEvents.filter(e => e.user_id !== currentUserId)
+        
+        const hasMyEvents = myEvents.length > 0
+        const hasPartnerEvents = partnerEvents.length > 0
+        
         return (
-          <div className="flex justify-center gap-1 mt-1">
-            {dayEvents.slice(0, 3).map((e, i) => (
-              <div
-                key={i}
-                className="w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: e.color }}
+          <div className="event-dots-container">
+            {/* My events - pink dot */}
+            {hasMyEvents && (
+              <div 
+                className="event-dot event-dot-mine"
+                style={{ backgroundColor: MY_EVENT_COLOR }}
+                title={`Мои события: ${myEvents.length}`}
               />
-            ))}
+            )}
+            {/* Partner events - blue dot */}
+            {hasPartnerEvents && (
+              <div 
+                className="event-dot event-dot-partner"
+                style={{ backgroundColor: PARTNER_EVENT_COLOR }}
+                title={`События партнёра: ${partnerEvents.length}`}
+              />
+            )}
+            {/* Show additional dots for more variety if both have events and more than 1 */}
+            {myEvents.length > 1 && (
+              <div 
+                className="event-dot event-dot-mine opacity-60"
+                style={{ backgroundColor: MY_EVENT_COLOR }}
+              />
+            )}
+            {partnerEvents.length > 1 && (
+              <div 
+                className="event-dot event-dot-partner opacity-60"
+                style={{ backgroundColor: PARTNER_EVENT_COLOR }}
+              />
+            )}
+            {/* Show extra indicator if many events */}
+            {(myEvents.length > 2 || partnerEvents.length > 2) && (
+              <span className="text-[10px] text-gray-400 font-medium">+</span>
+            )}
           </div>
         )
       }
@@ -395,13 +451,39 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
 
   return (
     <div className="pt-12 lg:pt-0">
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">Календарь</h1>
-      <p className="text-gray-500 mb-6">Планируйте совместные события</p>
+      {/* Header with gradient */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl">
+            <CalendarIcon className="w-6 h-6 text-primary" />
+          </div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 via-gray-700 to-gray-600 bg-clip-text text-transparent">
+            Календарь
+          </h1>
+        </div>
+        <p className="text-gray-500 ml-11">Планируйте совместные события и делитесь планами</p>
+        
+        {/* Legend */}
+        <div className="flex items-center gap-6 mt-4 ml-11">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-pink-500 shadow-sm shadow-pink-500/30"></div>
+            <span className="text-sm text-gray-600 flex items-center gap-1">
+              <User className="w-3 h-3" /> Мои события
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-blue-500 shadow-sm shadow-blue-500/30"></div>
+            <span className="text-sm text-gray-600 flex items-center gap-1">
+              <Heart className="w-3 h-3" /> События партнёра
+            </span>
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Calendar */}
         <div className="lg:col-span-2">
-          <div className="card p-4">
+          <div className="card p-6 overflow-hidden">
             <Calendar
               onChange={(value) => setSelectedDate(value as Date)}
               value={selectedDate}
@@ -418,15 +500,20 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
         {/* Events for selected date */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">
-              {selectedDate.toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </h2>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800 capitalize">
+                {selectedDate.toLocaleDateString('ru-RU', { weekday: 'long' })}
+              </h2>
+              <p className="text-sm text-gray-500">
+                {selectedDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+            </div>
             <button
               onClick={() => setShowAddForm(!showAddForm)}
-              className="btn-primary flex items-center gap-2"
+              className="btn-primary flex items-center gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all"
             >
-                            <Plus className="w-4 h-4" />
-              Добавить
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Добавить</span>
             </button>
           </div>
 
@@ -453,30 +540,31 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-gray-500 mb-2">Color</label>
-                <div className="flex gap-2">
-                  {colorOptions.map(color => (
+                <label className="block text-sm font-medium text-gray-600 mb-3">Цвет события</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {allColorOptions.map(color => (
                     <button
                       key={color.value}
                       type="button"
                       onClick={() => setNewEventColor(color.value)}
-                      className={`w-8 h-8 rounded-full transition-transform ${
-                        newEventColor === color.value ? 'scale-110 ring-2 ring-offset-2 ring-gray-300' : ''
+                      className={`w-full aspect-square rounded-xl transition-all duration-200 hover:scale-105 ${
+                        newEventColor === color.value ? 'ring-2 ring-offset-2 ring-gray-400 shadow-lg scale-105' : 'hover:shadow-md'
                       }`}
                       style={{ backgroundColor: color.value }}
+                      title={color.label}
                     />
                   ))}
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-gray-500 mb-2 flex items-center gap-2">
-                  <Repeat className="w-4 h-4" />
-                  Повтор
+                <label className="block text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
+                  <Repeat className="w-4 h-4 text-violet-500" />
+                  Повторение
                 </label>
                 <select
                   value={newEventRepeat}
                   onChange={(e) => setNewEventRepeat(e.target.value)}
-                  className="input w-full"
+                  className="input w-full bg-white/50"
                 >
                   {repeatOptions.map(option => (
                     <option key={option.value} value={option.value}>
@@ -485,7 +573,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                   ))}
                 </select>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowAddForm(false)}
@@ -535,13 +623,13 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                             onChange={(e) => setEditTime(e.target.value)}
                             className="input flex-1"
                           />
-                          <div className="flex gap-1">
-                            {colorOptions.map(c => (
+                          <div className="flex gap-1 flex-wrap">
+                            {allColorOptions.map(c => (
                               <button
                                 key={c.value}
                                 type="button"
                                 onClick={() => setEditColor(c.value)}
-                                className={`w-6 h-6 rounded-full transition-transform ${
+                                className={`w-6 h-6 rounded-full transition-all duration-200 hover:scale-110 ${
                                   editColor === c.value ? 'scale-110 ring-2 ring-offset-1 ring-gray-400' : ''
                                 }`}
                                 style={{ backgroundColor: c.value }}
@@ -569,9 +657,24 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                     </>
                   ) : (
                     <>
+                      <div 
+                        className="w-1 h-12 rounded-full mr-2"
+                        style={{ backgroundColor: event.color }}
+                      />
                       <div className="flex-1">
-                        <p className="font-medium text-gray-800">{event.title}</p>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-gray-800">{event.title}</p>
+                          {event.user_id === currentUserId ? (
+                            <span className="text-[10px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-full font-medium">
+                              Моё
+                            </span>
+                          ) : (
+                            <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded-full font-medium flex items-center gap-0.5">
+                              <Heart className="w-2.5 h-2.5" /> Партнёр
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-gray-500 mt-0.5">
                           {event.event_time && (
                             <p className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
@@ -579,7 +682,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                             </p>
                           )}
                           {(event.repeat_type && event.repeat_type !== 'none') && (
-                            <p className="flex items-center gap-1 text-blue-500">
+                            <p className="flex items-center gap-1 text-violet-500">
                               <Repeat className="w-3 h-3" />
                               {getRepeatLabel(event.repeat_type)}
                             </p>
@@ -588,7 +691,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                       </div>
                       <button
                         onClick={() => setExpandedEventId(isExpanded ? null : event.id)}
-                        className="p-2 text-gray-400 hover:text-primary text-xs"
+                        className="px-3 py-1.5 text-xs text-gray-500 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
                       >
                         {isExpanded ? 'Свернуть' : 'План'}
                       </button>
@@ -599,14 +702,14 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                       />
                       <button
                         onClick={() => startEdit(event)}
-                        className="p-2 text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
+                        className="p-2 text-gray-400 hover:text-primary hover:bg-primary/5 opacity-0 group-hover:opacity-100 rounded-lg transition-all"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => deleteEvent(event.id)}
                         disabled={actionLoading === event.id}
-                        className="p-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-all"
+                        className="p-2 text-gray-400 hover:text-danger hover:bg-danger/5 opacity-0 group-hover:opacity-100 rounded-lg transition-all"
                       >
                         {actionLoading === event.id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -620,14 +723,18 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                   
                   {/* Plan items section */}
                   {isExpanded && (
-                    <div className="mt-2 ml-4 pl-4 border-l-2 border-gray-200 space-y-2">
+                    <div className="mt-3 ml-6 pl-4 border-l-2 border-dashed space-y-2" style={{ borderColor: event.color + '40' }}>
+                      <div className="flex items-center gap-2 text-xs text-gray-400 uppercase tracking-wide mb-2">
+                        <Sparkles className="w-3 h-3" />
+                        План на день
+                      </div>
                       {eventPlan.length > 0 ? (
                         eventPlan
                           .sort((a: PlanItem, b: PlanItem) => a.time.localeCompare(b.time))
                           .map((item: PlanItem) => {
                             const isEditingPlan = editingPlanId === item.id
                             return (
-                            <div key={item.id} className="flex items-center gap-2 text-sm bg-gray-50 p-2 rounded">
+                            <div key={item.id} className="flex items-center gap-3 text-sm bg-white/60 backdrop-blur-sm p-3 rounded-xl shadow-sm border border-gray-100">
                               {isEditingPlan ? (
                                 <>
                                   <input
@@ -645,7 +752,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                                   <button
                                     onClick={() => updatePlanItem(event.id, item.id)}
                                     disabled={!editPlanTitle.trim() || !editPlanTime}
-                                    className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                    className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-all"
                                   >
                                     <Save className="w-4 h-4" />
                                   </button>
@@ -655,37 +762,45 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                                       setEditPlanTime('')
                                       setEditPlanTitle('')
                                     }}
-                                    className="p-1 text-gray-400 hover:bg-gray-100 rounded"
+                                    className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-all"
                                   >
                                     <X className="w-4 h-4" />
                                   </button>
                                 </>
                               ) : (
                                 <>
-                                  <span className="font-medium text-primary w-16">{item.time}</span>
+                                  <span 
+                                    className="font-semibold w-16 px-2 py-0.5 rounded-lg text-sm"
+                                    style={{ 
+                                      backgroundColor: event.color + '15',
+                                      color: event.color 
+                                    }}
+                                  >
+                                    {item.time}
+                                  </span>
                                   <span className="flex-1 text-gray-700">{item.title}</span>
                                   <button
                                     onClick={() => startEditPlan(item)}
-                                    className="p-1 text-gray-400 hover:text-primary"
+                                    className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
                                   >
-                                    <Pencil className="w-3 h-3" />
+                                    <Pencil className="w-3.5 h-3.5" />
                                   </button>
                                   <button
                                     onClick={() => removePlanItem(event.id, item.id)}
-                                    className="p-1 text-gray-400 hover:text-danger"
+                                    className="p-1.5 text-gray-400 hover:text-danger hover:bg-danger/5 rounded-lg transition-all"
                                   >
-                                    <Trash2 className="w-3 h-3" />
+                                    <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 </>
                               )}
                             </div>
                           )})
                       ) : (
-                        <p className="text-sm text-gray-400">Нет пунктов плана</p>
+                        <p className="text-sm text-gray-400 italic py-2">Нет пунктов плана</p>
                       )}
                       
                       {isAddingPlan ? (
-                        <div className="flex gap-2 items-center">
+                        <div className="flex gap-2 items-center bg-white/60 backdrop-blur-sm p-3 rounded-xl border border-gray-100">
                           <input
                             type="time"
                             value={newPlanTime}
@@ -702,7 +817,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                           <button
                             onClick={() => addPlanItem(event.id)}
                             disabled={!newPlanTitle.trim() || !newPlanTime}
-                            className="p-1 text-green-600 hover:bg-green-50 rounded"
+                            className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-all disabled:opacity-50"
                           >
                             <Save className="w-4 h-4" />
                           </button>
@@ -712,7 +827,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                               setNewPlanTime('')
                               setNewPlanTitle('')
                             }}
-                            className="p-1 text-gray-400 hover:bg-gray-100 rounded"
+                            className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-all"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -720,9 +835,10 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                       ) : (
                         <button
                           onClick={() => setAddingPlan(event.id)}
-                          className="text-sm text-primary hover:underline"
+                          className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 bg-primary/5 hover:bg-primary/10 px-3 py-2 rounded-xl transition-all"
                         >
-                          + Добавить пункт
+                          <Plus className="w-4 h-4" />
+                          Добавить пункт
                         </button>
                       )}
                     </div>
@@ -730,9 +846,19 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                 </div>
               )})
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                <CalendarIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                <p>Нет событий на этот день</p>
+              <div className="text-center py-12 px-4">
+                <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center shadow-inner">
+                  <CalendarIcon className="w-10 h-10 text-gray-300" />
+                </div>
+                <p className="text-gray-500 font-medium mb-1">Нет событий</p>
+                <p className="text-gray-400 text-sm mb-4">На этот день пока ничего не запланировано</p>
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="inline-flex items-center gap-2 text-primary hover:text-primary/80 text-sm font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Добавить событие
+                </button>
               </div>
             )}
           </div>
